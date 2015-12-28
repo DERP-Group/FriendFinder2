@@ -1,0 +1,43 @@
+{
+  "liveFinderConfig":{
+    "apiKey":"9E5D61DD0D1A99F0235D91B1139A163B"
+  },
+  "server": {
+    "applicationConnectors": [
+      {
+        "type": "http",
+        "port" : 9080
+      },
+      {
+        "type": "https",
+        "port" : 9443,
+        "keyStorePath": "/var/lib/livefinder/keystore.jks",
+        "keyStorePassword": "changeit",
+        "trustStorePath": "/usr/lib/jvm/jre/lib/security/cacerts",
+        "certAlias": "selfsigned"
+      }
+    ],
+    "adminConnectors": [
+      {
+        "type": "http",
+        "port": 9081
+      }
+    ]
+  },
+  "logging": {
+    "appenders": [
+      {
+        "type": "file",
+        "currentLogFilename": "/var/log/livefinder/livefinder.log",
+        "archivedLogFilenamePattern": "/var/log/livefinder/livefinder-%d.log",
+        "archivedFileCount": 5
+      }
+    ],
+    "level": "INFO",
+    "loggers": {
+      "com": {
+        "derpgroup": "DEBUG"
+      }
+    }
+  }
+}

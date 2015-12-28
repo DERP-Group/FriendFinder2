@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>com.derpgroup.derpwizard</groupId>
-    <artifactId>derpwizard-project</artifactId>
+    <groupId>com.derpgroup.livefinder</groupId>
+    <artifactId>livefinder-project</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <artifactId>derpwizard-service</artifactId>
+  <artifactId>livefinder-service</artifactId>
   <packaging>jar</packaging>
 
   <properties>
@@ -17,12 +17,94 @@
       <groupId>com.derpgroup.derpwizard</groupId>
       <artifactId>derpwizard-voice-interface</artifactId>
       <version>${project.version}</version>
+      <exclusions>
+        <exclusion> 
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+        <exclusion> 
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+        <exclusion> 
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.derpgroup.derpwizard</groupId>
+      <artifactId>derpwizard-service</artifactId>
+      <version>${project.version}</version>
+      <exclusions>
+        <exclusion> 
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+        <exclusion> 
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+        <exclusion> 
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
       <groupId>io.dropwizard</groupId>
       <artifactId>dropwizard-core</artifactId>
       <version>${dropwizard.version}</version>
+      <exclusions>
+        <exclusion> 
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+        <exclusion> 
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+        <exclusion> 
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>net.sf.json-lib</groupId>
+      <artifactId>json-lib</artifactId>
+      <classifier>jdk15</classifier>
+      <version>2.4</version>
+    </dependency>
+    <dependency>
+	  <groupId>commons-codec</groupId>
+	  <artifactId>commons-codec</artifactId>
+	  <version>1.10</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.7.13</version>
+    </dependency>
+    <dependency>
+      <groupId>com.lukaspradel</groupId>
+      <artifactId>steam-web-api</artifactId>
+      <version>1.2</version>
+      <exclusions>
+        <exclusion> 
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+        <exclusion> 
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+        <exclusion> 
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 

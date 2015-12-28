@@ -1,0 +1,32 @@
+{
+  "liveFinderConfig":{
+    "apiKey":"9E5D61DD0D1A99F0235D91B1139A163B"
+  },
+  "server": {
+    "applicationConnectors": [
+      {
+        "type": "http",
+        "port" : 9080
+      }
+    ],
+    "adminConnectors": [
+      {
+        "type": "http",
+        "port": 9081
+      }
+    ]
+  },
+  "logging": {
+    "appenders": [
+      {
+        "type": "console"
+      }
+    ],
+    "level": "INFO",
+    "loggers": {
+      "com": {
+        "derpgroup": "DEBUG"
+      }
+    }
+  }
+}

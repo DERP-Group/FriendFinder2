@@ -1,8 +1,6 @@
-# DERP Wizard 
+# LiveFinder
 
-Boilerplate DropTables project designed to interface with Amazon Echo.
-
-http://dropwizard.io/
+Service to locate your friends or those you follow in online communities
 
 
 # Compiling
@@ -12,16 +10,16 @@ http://dropwizard.io/
 
 # Running
 
-`java -jar service/target/derpwizard-service.jar server service.json`
+`java -jar service/target/livefinder-service.jar server livefinder.json`
 
 
 # Configuration
 
 Refer to the Dropwizard configuration module for framework-specific configuration (logging, HTTP ports, etc.): http://www.dropwizard.io/manual/configuration.html
 
-See `service.json` for an example configuration file suitable for a development environment.
+See `livefinder.json` for an example configuration file suitable for a development environment.
 
-See `service_local.json` for an example configuration file suitable for local development.
+See `livefinder_local.json` for an example configuration file suitable for local development.
 
 ## Enabling SSL
 
