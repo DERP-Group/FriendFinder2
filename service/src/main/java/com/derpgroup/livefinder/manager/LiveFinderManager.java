@@ -58,64 +58,6 @@ public class LiveFinderManager extends AbstractManager {
     steamStateValues.put(6, "online and looking to play!");
   }
 
-  protected void doConversationRequest2(VoiceInput voiceInput,
-      SsmlDocumentBuilder builder) throws DerpwizardException {
-    steamClient = steamClientWrapper.getClient();
-
-    if (voiceInput.getMessageSubject().equals("STEAM_FRIENDS")) {
-      if (steamClient == null) {
-        String message = "Couldn't build Steam client.";
-        LOG.warn(message);
-        throw new DerpwizardException(new SsmlDocumentBuilder().text(message)
-            .build().getSsml(), message, "No Steam client.");
-      } else {
-        UserData data = getUserData("");
-        List<String> friends = getListOfFriendIdsByUserId(data);
-
-        GetPlayerSummariesRequest playerSummariesRequest = SteamWebApiRequestFactory
-            .createGetPlayerSummariesRequest(friends);
-        // List<String> onlineFriends = new LinkedList<String>();
-        Map<Integer, String> stateValues = new HashMap<Integer, String>();
-        stateValues.put(1, " is online.  ");
-        stateValues.put(2, " is online, but busy.  ");
-        stateValues.put(3, " is online, but away.  ");
-        stateValues.put(4, " is online, but snoozing.  ");
-        stateValues.put(5, " is online.  ");
-        stateValues.put(6, " is online and looking to play!  ");
-        try {
-          GetPlayerSummaries playerSummaries = steamClient
-              .<GetPlayerSummaries> processRequest(playerSummariesRequest);
-          for (Player player : playerSummaries.getResponse().getPlayers()) {
-            Integer state = player.getPersonastate();
-            if (state == null || state <= 0 || state >= 7) {
-              continue;
-            }
-            String username = player.getPersonaname();
-            builder.text(username + stateValues.get(state)).endSentence();
-          }
-        } catch (SteamApiException e) {
-          String message = "Unknown Steam exception '" + e.getMessage() + "'.";
-          LOG.warn(message);
-          throw new DerpwizardException(new SsmlDocumentBuilder().text(message)
-              .build().getSsml(), message, "Unknown Steam exception.");
-        }
-      }
-    } else {
-      String message = "Unknown request type '"
-          + voiceInput.getMessageSubject() + "'.";
-      LOG.warn(message);
-      throw new DerpwizardException(new SsmlDocumentBuilder().text(message)
-          .build().getSsml(), message, "Unknown request.");
-    }
-
-  }
-
-  private UserData getUserData(String string) {
-    UserData userData = new UserData();
-    userData.setSteamId("76561198019030536"); // Hardcoded to Eric's ID for now
-    return userData;
-  }
-
   @Override
   protected void doHelpRequest(VoiceInput voiceInput,
       ServiceOutput serviceOutput) throws DerpwizardException {
@@ -195,7 +137,6 @@ public class LiveFinderManager extends AbstractManager {
         LOG.warn(message);
         throw new DerpwizardException(new SsmlDocumentBuilder().text(message).build().getSsml(), message, message);
     }
-    
   }
   
   private void findSteamFriends(VoiceInput voiceInput, ServiceOutput serviceOutput) throws DerpwizardException{
@@ -240,6 +181,12 @@ public class LiveFinderManager extends AbstractManager {
       serviceOutput.getVisualOutput().setText(visualOutputTextBuilder.toString());
       serviceOutput.getVoiceOutput().setSsmltext(voiceOutputSsmlBuilder.build().getSsml());
     }
+  }
+  
+  private UserData getUserData(String string) {
+    UserData userData = new UserData();
+    userData.setSteamId("76561198019030536"); // Hardcoded to Eric's ID for now
+    return userData;
   }
 
   public List<String> getListOfFriendIdsByUserId(UserData data) throws DerpwizardException {
