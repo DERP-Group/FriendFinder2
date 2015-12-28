@@ -16,9 +16,12 @@ import com.derpgroup.derpwizard.voice.model.ServiceOutput;
 import com.derpgroup.derpwizard.voice.model.SsmlDocumentBuilder;
 import com.derpgroup.derpwizard.voice.model.VoiceInput;
 import com.derpgroup.derpwizard.voice.util.ConversationHistoryUtils;
+import com.derpgroup.livefinder.LiveFinderMetadata;
 import com.derpgroup.livefinder.MixInModule;
+import com.derpgroup.livefinder.dao.AccountLinkingDAO;
 import com.derpgroup.livefinder.model.SteamClientWrapper;
 import com.derpgroup.livefinder.model.UserData;
+import com.derpgroup.livefinder.model.accountlinking.AccountLinkingUser;
 import com.lukaspradel.steamapi.core.exception.SteamApiException;
 import com.lukaspradel.steamapi.data.json.friendslist.Friend;
 import com.lukaspradel.steamapi.data.json.friendslist.GetFriendList;
@@ -37,6 +40,8 @@ public class LiveFinderManager extends AbstractManager {
   private SteamWebApiClient steamClient;
   private static SteamClientWrapper steamClientWrapper;
   private Map<Integer, String> steamStateValues;
+  
+  private AccountLinkingDAO accountLinkingDAO;
 
   static {
     steamClientWrapper = SteamClientWrapper.getInstance();
@@ -46,9 +51,10 @@ public class LiveFinderManager extends AbstractManager {
     ConversationHistoryUtils.getMapper().registerModule(new MixInModule());
   }
 
-  public LiveFinderManager() {
+  public LiveFinderManager(AccountLinkingDAO accountLinkingDAO) {
     super();
 
+    this.accountLinkingDAO = accountLinkingDAO;
     steamStateValues = new HashMap<Integer, String>();
     steamStateValues.put(1, "online.");
     steamStateValues.put(2, "online, but busy.");
@@ -141,8 +147,17 @@ public class LiveFinderManager extends AbstractManager {
   
   private void findSteamFriends(VoiceInput voiceInput, ServiceOutput serviceOutput) throws DerpwizardException{
     steamClient = steamClientWrapper.getClient();
-    UserData data = getUserData("");
-    List<String> friends = getListOfFriendIdsByUserId(data);
+    
+    String userId = ((LiveFinderMetadata)voiceInput.getMetadata()).getUserId();
+    
+    if(StringUtils.isEmpty(userId)){
+      String message = "Missing userId.";
+      LOG.error(message);
+      throw new DerpwizardException(message);
+    }
+    
+    AccountLinkingUser user = accountLinkingDAO.getUser(userId);
+    List<String> friends = getListOfFriendIdsByUserId(user.getSteamId());
     
     GetPlayerSummaries playerSummaries;
     try {
@@ -182,15 +197,9 @@ public class LiveFinderManager extends AbstractManager {
       serviceOutput.getVoiceOutput().setSsmltext(voiceOutputSsmlBuilder.build().getSsml());
     }
   }
-  
-  private UserData getUserData(String string) {
-    UserData userData = new UserData();
-    userData.setSteamId("76561198019030536"); // Hardcoded to Eric's ID for now
-    return userData;
-  }
 
-  public List<String> getListOfFriendIdsByUserId(UserData data) throws DerpwizardException {
-    GetFriendListRequest friendListRequest = SteamWebApiRequestFactory.createGetFriendListRequest(data.getSteamId());
+  public List<String> getListOfFriendIdsByUserId(String steamId) throws DerpwizardException {
+    GetFriendListRequest friendListRequest = SteamWebApiRequestFactory.createGetFriendListRequest(steamId);
     List<String> friends = new LinkedList<String>();
     try {
       GetFriendList friendList = steamClient.<GetFriendList> processRequest(friendListRequest);

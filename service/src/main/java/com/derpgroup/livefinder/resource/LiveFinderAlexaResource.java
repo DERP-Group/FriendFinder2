@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import io.dropwizard.setup.Environment;
 
@@ -57,7 +58,10 @@ import com.derpgroup.derpwizard.voice.model.VoiceMessageFactory.InterfaceType;
 import com.derpgroup.livefinder.LiveFinderMetadata;
 import com.derpgroup.livefinder.MixInModule;
 import com.derpgroup.livefinder.configuration.MainConfig;
+import com.derpgroup.livefinder.dao.AccountLinkingDAO;
 import com.derpgroup.livefinder.manager.LiveFinderManager;
+import com.derpgroup.livefinder.model.accountlinking.InterfaceMapping;
+import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -73,15 +77,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class LiveFinderAlexaResource {
 
   private static final Logger LOG = LoggerFactory.getLogger(LiveFinderAlexaResource.class);
-  
-  private static final List<String> UNSUPPORTED_SSML_TAGS = Collections.unmodifiableList(Arrays.asList(
-      "emphasis"
-      ));
 
   private LiveFinderManager manager;
   
-  public LiveFinderAlexaResource(MainConfig config, Environment env) {
-    manager = new LiveFinderManager();
+  private AccountLinkingDAO accountLinkingDAO;
+  
+  public LiveFinderAlexaResource(MainConfig config, Environment env, AccountLinkingDAO accountLinkingDAO) {
+    this.accountLinkingDAO = accountLinkingDAO;
+    manager = new LiveFinderManager(accountLinkingDAO);
   }
 
   /**
@@ -94,13 +97,34 @@ public class LiveFinderAlexaResource {
     LiveFinderMetadata outputMetadata = null;
     try {
       if (request.getRequest() == null) {
-        throw new DerpwizardException(DerpwizardExceptionReasons.MISSING_INFO.getSsml(),"Missing request body."); //TODO: create AlexaException
+        throw new DerpwizardException(DerpwizardExceptionReasons.MISSING_INFO.getSsml(),"Missing request body.");
       }
       if(testFlag == null || testFlag == false){ 
         AlexaUtils.validateAlexaRequest(request, signatureCertChainUrl, signature);
       }
   
       Map<String, Object> sessionAttributes = request.getSession().getAttributes();
+      
+      if(request.getSession() == null || request.getSession().getUser() == null || StringUtils.isEmpty(request.getSession().getUser().getUserId())){
+        String message = "Missing Alexa userId.";
+        LOG.error(message);
+        throw new DerpwizardException(message);
+      }else{
+        String alexaUserId = request.getSession().getUser().getUserId();
+        String userId = accountLinkingDAO.getUserIdByInterfaceUserIdAndInterface(alexaUserId, InterfaceName.ALEXA);
+        if(StringUtils.isEmpty(userId)){
+          InterfaceMapping mapping = new InterfaceMapping();
+          mapping.setUserId(UUID.randomUUID().toString());
+          mapping.setInterfaceUserId(alexaUserId);
+          mapping.setInterfaceName(InterfaceName.ALEXA);
+          
+          accountLinkingDAO.addInterfaceMapping(mapping);
+          
+          sessionAttributes.put("userId", mapping.getUserId());
+        }else{
+          sessionAttributes.put("userId", userId);
+        }
+      }
   
       mapper.registerModule(new MixInModule());
       CommonMetadata inputMetadata = mapper.convertValue(sessionAttributes, new TypeReference<LiveFinderMetadata>(){});

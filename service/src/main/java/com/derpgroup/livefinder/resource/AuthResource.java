@@ -40,17 +40,17 @@ import com.derpgroup.livefinder.manager.LiveFinderManager;
  * @author Eric
  * @since 0.0.1
  */
-@Path("/auth/twitch")
-@Produces(MediaType.APPLICATION_JSON)
+@Path("/livefinder/auth/twitch")
+@Produces(MediaType.TEXT_PLAIN)
 @Consumes(MediaType.APPLICATION_JSON)
 public class AuthResource {
 
   private static final Logger LOG = LoggerFactory.getLogger(AuthResource.class);
 
-  private LiveFinderManager manager;
+//  private LiveFinderManager manager;
   
   public AuthResource(MainConfig config, Environment env) {
-    manager = new LiveFinderManager();
+//    manager = new LiveFinderManager();
   }
   
   @GET
