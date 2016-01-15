@@ -66,7 +66,7 @@ public class App extends Application<MainConfig> {
     
     // Resources
     environment.jersey().register(new LiveFinderAlexaResource(config, environment, accountLinkingDAO));
-    environment.jersey().register(new AuthResource(config, environment));
+    environment.jersey().register(new AuthResource(config, environment,accountLinkingDAO));
     
     SteamClientWrapper wrapper = SteamClientWrapper.getInstance();
     wrapper.init(config.getLiveFinderConfig().getApiKey());

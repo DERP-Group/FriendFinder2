@@ -6,7 +6,9 @@ import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
 
 public interface AccountLinkingDAO {
 
-  public AccountLinkingUser getUser(String alexaUserId);
+  public AccountLinkingUser getUserByUserId(String alexaUserId);
+  
+  public AccountLinkingUser updateUser(AccountLinkingUser user);
   
   public String getUserIdByInterfaceUserIdAndInterface(String interfaceUserId, InterfaceName interfaceName);
   

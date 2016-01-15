@@ -20,28 +20,34 @@
 
 package com.derpgroup.livefinder.resource;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import io.dropwizard.setup.Environment;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.derpgroup.livefinder.configuration.MainConfig;
+import com.derpgroup.livefinder.dao.AccountLinkingDAO;
 import com.derpgroup.livefinder.manager.LiveFinderManager;
+import com.derpgroup.livefinder.model.accountlinking.AccountLinkingUser;
 
 /**
- * REST APIs for requests generating from Amazon Alexa
+ * REST APIs for requests generating from authentication flows
  *
  * @author Eric
  * @since 0.0.1
  */
-@Path("/livefinder/auth/twitch")
-@Produces(MediaType.TEXT_PLAIN)
+@Path("/livefinder/auth")
+@Produces({MediaType.TEXT_PLAIN,MediaType.APPLICATION_JSON})
 @Consumes(MediaType.APPLICATION_JSON)
 public class AuthResource {
 
@@ -49,12 +55,56 @@ public class AuthResource {
 
 //  private LiveFinderManager manager;
   
-  public AuthResource(MainConfig config, Environment env) {
+  AccountLinkingDAO accountLinkingDAO;
+  
+  public AuthResource(MainConfig config, Environment env, AccountLinkingDAO accountLinkingDAO) {
 //    manager = new LiveFinderManager();
+    this.accountLinkingDAO = accountLinkingDAO;
   }
   
   @GET
+  @Path("/twitch")
+  @Produces(MediaType.TEXT_PLAIN)
   public String doTwitchAuth(){
     return "Hello!";
+  }
+  
+  @GET
+  @Path("/steam/linkIds")
+  @Produces(MediaType.TEXT_PLAIN)
+  public String doSteamLinking(@QueryParam("derpId") String derpId, @QueryParam("externalId") String externalId, @QueryParam("externalIdType") String externalIdType){
+    Map<String,String> output = new HashMap<String,String>();
+    
+    if(derpId == null){
+      return "Error - missing required parameter 'derpId'";
+    }
+    if(externalId == null){
+      return "Error - missing required parameter 'externalId'";
+    }
+    if(externalIdType == null){
+      return "Error - missing required parameter 'externalIdType'";
+    }
+    
+    AccountLinkingUser user = accountLinkingDAO.getUserByUserId(derpId);
+    if(user == null){
+      return "Error - couldn't find user with derpId '" + derpId + "'.";
+    }
+    
+    switch(externalIdType.toLowerCase()){
+    case "steam":
+      if(user.getSteamId() == null){
+        LOG.info("User '" + derpId + "' has no steamId; setting for the first time to '" + externalId + "'.");
+      }else{
+        LOG.info("User '" + derpId + "' had steamId '" + user.getSteamId() + "'; updating to '" + externalId + "'.");
+      }
+      user.setSteamId(externalId);
+      break;
+    default:
+      return "Error - unknown externalIdType";
+    }
+    
+    accountLinkingDAO.updateUser(user);
+    
+    return user.toString();
   }
 }

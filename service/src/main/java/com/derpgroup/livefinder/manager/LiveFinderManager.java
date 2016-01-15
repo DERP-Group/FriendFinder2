@@ -156,7 +156,7 @@ public class LiveFinderManager extends AbstractManager {
       throw new DerpwizardException(message);
     }
     
-    AccountLinkingUser user = accountLinkingDAO.getUser(userId);
+    AccountLinkingUser user = accountLinkingDAO.getUserByUserId(userId);
     List<String> friends = getListOfFriendIdsByUserId(user.getSteamId());
     
     GetPlayerSummaries playerSummaries;

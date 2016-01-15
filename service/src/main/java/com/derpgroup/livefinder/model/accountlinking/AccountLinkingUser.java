@@ -6,11 +6,11 @@ public class AccountLinkingUser {
   private TwitchUser twitchUser;
   private String steamId;
   
-  public String userId() {
+  public String getUserId() {
     return userId;
   }
 
-  public void userId(String userId) {
+  public void setUserId(String userId) {
     this.userId = userId;
   }
 
@@ -28,5 +28,11 @@ public class AccountLinkingUser {
 
   public void setSteamId(String steamId) {
     this.steamId = steamId;
+  }
+
+  @Override
+  public String toString() {
+    return "AccountLinkingUser [userId=" + userId + ", twitchUser="
+        + twitchUser + ", steamId=" + steamId + "]";
   }
 }
