@@ -4,6 +4,7 @@ public class InterfaceMapping {
 
   private String userId;
   private String interfaceUserId;
+  private String authToken;
   private InterfaceName interfaceName;
   
   public String getUserId() {
@@ -22,6 +23,14 @@ public class InterfaceMapping {
     this.interfaceUserId = interfaceUserId;
   }
   
+  public String getAuthToken() {
+    return authToken;
+  }
+
+  public void setAuthToken(String authToken) {
+    this.authToken = authToken;
+  }
+
   public InterfaceName getInterfaceName() {
     return interfaceName;
   }

@@ -1,6 +1,13 @@
 {
   "liveFinderConfig":{
-    "apiKey":"9E5D61DD0D1A99F0235D91B1139A163B"
+    "apiKey":"9E5D61DD0D1A99F0235D91B1139A163B",
+    "steamAccountLinkingConfig":{
+      "linkingFlowHostname":"derpgroup.com",
+      "linkingFlowProtocol":"http",
+      "successPagePath":"/steamredirectsuccess.html",
+      "errorPagePath":"/steamredirecterror.html",
+      "landingPagePath":"/steam.html"
+    }
   },
   "server": {
     "applicationConnectors": [

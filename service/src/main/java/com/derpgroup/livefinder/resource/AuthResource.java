@@ -20,8 +20,7 @@
 
 package com.derpgroup.livefinder.resource;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.net.URISyntaxException;
 
 import io.dropwizard.setup.Environment;
 
@@ -31,13 +30,15 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.derpgroup.livefinder.configuration.MainConfig;
 import com.derpgroup.livefinder.dao.AccountLinkingDAO;
-import com.derpgroup.livefinder.manager.LiveFinderManager;
 import com.derpgroup.livefinder.model.accountlinking.AccountLinkingUser;
 
 /**
@@ -52,14 +53,19 @@ import com.derpgroup.livefinder.model.accountlinking.AccountLinkingUser;
 public class AuthResource {
 
   private static final Logger LOG = LoggerFactory.getLogger(AuthResource.class);
-
-//  private LiveFinderManager manager;
   
-  AccountLinkingDAO accountLinkingDAO;
+  private AccountLinkingDAO accountLinkingDAO;
+  private String linkingFlowHostname;
+  private String successPagePath;
+  private String errorPagePath;
+  
   
   public AuthResource(MainConfig config, Environment env, AccountLinkingDAO accountLinkingDAO) {
-//    manager = new LiveFinderManager();
     this.accountLinkingDAO = accountLinkingDAO;
+    
+    linkingFlowHostname = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getLinkingFlowHostname();
+    successPagePath = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getSuccessPagePath();
+    errorPagePath = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getErrorPagePath();
   }
   
   @GET
@@ -72,39 +78,50 @@ public class AuthResource {
   @GET
   @Path("/steam/linkIds")
   @Produces(MediaType.TEXT_PLAIN)
-  public String doSteamLinking(@QueryParam("derpId") String derpId, @QueryParam("externalId") String externalId, @QueryParam("externalIdType") String externalIdType){
-    Map<String,String> output = new HashMap<String,String>();
+  public Response doSteamLinking(@QueryParam("mappingToken") String mappingToken, @QueryParam("externalId") String externalId){
     
-    if(derpId == null){
-      return "Error - missing required parameter 'derpId'";
+    String derpId;
+    if(mappingToken == null){
+      return buildRedirect(linkingFlowHostname,errorPagePath,"Missing required parameter 'mappingToken'");
+    }else{
+      LOG.debug("Looking up userId for mappingToken '" + mappingToken + "'.");
+      derpId = accountLinkingDAO.getUserIdByMappingToken(mappingToken);
     }
     if(externalId == null){
-      return "Error - missing required parameter 'externalId'";
+      return buildRedirect(linkingFlowHostname,errorPagePath,"Missing required parameter 'externalId'");
     }
-    if(externalIdType == null){
-      return "Error - missing required parameter 'externalIdType'";
+    if(derpId == null){
+      return buildRedirect(linkingFlowHostname,errorPagePath,"Token could not be resolved to a known user.");
     }
     
+    LOG.debug("Looking up user for userId '" + derpId + "'.");
     AccountLinkingUser user = accountLinkingDAO.getUserByUserId(derpId);
     if(user == null){
-      return "Error - couldn't find user with derpId '" + derpId + "'.";
+      return buildRedirect(linkingFlowHostname,errorPagePath,"Couldn't find user with derpId '" + derpId + "'.");
     }
     
-    switch(externalIdType.toLowerCase()){
-    case "steam":
-      if(user.getSteamId() == null){
-        LOG.info("User '" + derpId + "' has no steamId; setting for the first time to '" + externalId + "'.");
-      }else{
-        LOG.info("User '" + derpId + "' had steamId '" + user.getSteamId() + "'; updating to '" + externalId + "'.");
-      }
-      user.setSteamId(externalId);
-      break;
-    default:
-      return "Error - unknown externalIdType";
+    if(user.getSteamId() == null){
+      LOG.info("User '" + derpId + "' has no steamId; setting for the first time to '" + externalId + "'.");
+    }else{
+      LOG.info("User '" + derpId + "' had steamId '" + user.getSteamId() + "'; updating to '" + externalId + "'.");
     }
+    user.setSteamId(externalId);
     
     accountLinkingDAO.updateUser(user);
-    
-    return user.toString();
+
+    return buildRedirect(linkingFlowHostname,successPagePath,null);
+  }
+  
+  public Response buildRedirect(String host, String path, String reason){
+    URIBuilder uriBuilder = new URIBuilder();
+    uriBuilder.setHost(host).setPath(path);
+    if(!StringUtils.isEmpty(reason)){
+      uriBuilder.addParameter("reason", reason);
+    }
+    try {
+      return Response.seeOther(uriBuilder.build()).build();
+    } catch (URISyntaxException e) {
+      return Response.serverError().entity("Unknown exception.").build();
+    }
   }
 }

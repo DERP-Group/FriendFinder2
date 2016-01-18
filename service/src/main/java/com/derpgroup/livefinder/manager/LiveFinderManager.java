@@ -21,7 +21,9 @@ import com.derpgroup.livefinder.MixInModule;
 import com.derpgroup.livefinder.dao.AccountLinkingDAO;
 import com.derpgroup.livefinder.model.SteamClientWrapper;
 import com.derpgroup.livefinder.model.UserData;
+import com.derpgroup.livefinder.model.accountlinking.AccountLinkingNotLinkedException;
 import com.derpgroup.livefinder.model.accountlinking.AccountLinkingUser;
+import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
 import com.lukaspradel.steamapi.core.exception.SteamApiException;
 import com.lukaspradel.steamapi.data.json.friendslist.Friend;
 import com.lukaspradel.steamapi.data.json.friendslist.GetFriendList;
@@ -157,6 +159,9 @@ public class LiveFinderManager extends AbstractManager {
     }
     
     AccountLinkingUser user = accountLinkingDAO.getUserByUserId(userId);
+    if(user == null || StringUtils.isEmpty(user.getSteamId())){
+      throw new AccountLinkingNotLinkedException(InterfaceName.STEAM);
+    }
     List<String> friends = getListOfFriendIdsByUserId(user.getSteamId());
     
     GetPlayerSummaries playerSummaries;

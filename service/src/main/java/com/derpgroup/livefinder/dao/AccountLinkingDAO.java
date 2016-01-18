@@ -13,4 +13,10 @@ public interface AccountLinkingDAO {
   public String getUserIdByInterfaceUserIdAndInterface(String interfaceUserId, InterfaceName interfaceName);
   
   public void addInterfaceMapping(InterfaceMapping interfaceMapping);
+  
+  public String generateMappingTokenForUserId(String userId);
+  
+  public String getUserIdByMappingToken(String token);
+  
+  public void expireMappingToken(String token);
 }
