@@ -21,6 +21,7 @@
 package com.derpgroup.livefinder.resource;
 
 import java.net.URISyntaxException;
+import java.util.UUID;
 
 import io.dropwizard.setup.Environment;
 
@@ -29,6 +30,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -55,17 +57,20 @@ public class AuthResource {
   private static final Logger LOG = LoggerFactory.getLogger(AuthResource.class);
   
   private AccountLinkingDAO accountLinkingDAO;
-  private String linkingFlowHostname;
-  private String successPagePath;
-  private String errorPagePath;
+  private String steamLinkingFlowHostname;
+  private String steamSuccessPagePath;
+  private String steamErrorPagePath;
+  private String alexaRedirectUri;
   
   
   public AuthResource(MainConfig config, Environment env, AccountLinkingDAO accountLinkingDAO) {
     this.accountLinkingDAO = accountLinkingDAO;
     
-    linkingFlowHostname = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getLinkingFlowHostname();
-    successPagePath = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getSuccessPagePath();
-    errorPagePath = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getErrorPagePath();
+    steamLinkingFlowHostname = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getLinkingFlowHostname();
+    steamSuccessPagePath = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getSuccessPagePath();
+    steamErrorPagePath = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getErrorPagePath();
+    
+    alexaRedirectUri = config.getLiveFinderConfig().getAlexaAccountLinkingConfig().getAlexaRedirectUri();
   }
   
   @GET
@@ -82,22 +87,22 @@ public class AuthResource {
     
     String derpId;
     if(mappingToken == null){
-      return buildRedirect(linkingFlowHostname,errorPagePath,"Missing required parameter 'mappingToken'");
+      return buildRedirect(steamLinkingFlowHostname,steamErrorPagePath,"Missing required parameter 'mappingToken'");
     }else{
       LOG.debug("Looking up userId for mappingToken '" + mappingToken + "'.");
       derpId = accountLinkingDAO.getUserIdByMappingToken(mappingToken);
     }
     if(externalId == null){
-      return buildRedirect(linkingFlowHostname,errorPagePath,"Missing required parameter 'externalId'");
+      return buildRedirect(steamLinkingFlowHostname,steamErrorPagePath,"Missing required parameter 'externalId'");
     }
     if(derpId == null){
-      return buildRedirect(linkingFlowHostname,errorPagePath,"Token could not be resolved to a known user.");
+      return buildRedirect(steamLinkingFlowHostname,steamErrorPagePath,"Token could not be resolved to a known user.");
     }
     
     LOG.debug("Looking up user for userId '" + derpId + "'.");
     AccountLinkingUser user = accountLinkingDAO.getUserByUserId(derpId);
     if(user == null){
-      return buildRedirect(linkingFlowHostname,errorPagePath,"Couldn't find user with derpId '" + derpId + "'.");
+      return buildRedirect(steamLinkingFlowHostname,steamErrorPagePath,"Couldn't find user with derpId '" + derpId + "'.");
     }
     
     if(user.getSteamId() == null){
@@ -109,7 +114,38 @@ public class AuthResource {
     
     accountLinkingDAO.updateUser(user);
 
-    return buildRedirect(linkingFlowHostname,successPagePath,null);
+    return buildRedirect(steamLinkingFlowHostname,steamSuccessPagePath,null);
+  }
+
+  @GET
+  @Path("/alexa")
+  @Produces(MediaType.TEXT_PLAIN) //Should eventually be replaced by a 302 redirect
+  public Response doAlexaLinking(@QueryParam("state") String state){
+    String accessToken = UUID.randomUUID().toString();
+    
+    StringBuilder urlFragment = new StringBuilder();
+    urlFragment.append("token_type=bearer");
+    urlFragment.append("&");
+    urlFragment.append("state=");
+    urlFragment.append(state);
+    urlFragment.append("&");
+    urlFragment.append("access_token=");
+    urlFragment.append(accessToken);
+    
+    URIBuilder uriBuilder;
+    try {
+      uriBuilder = new URIBuilder(alexaRedirectUri);
+    } catch (URISyntaxException e) {
+      throw new WebApplicationException("Error");
+    }
+    uriBuilder.setFragment(urlFragment.toString());
+    LOG.info("Redirect URI: " + uriBuilder.toString());
+    try {
+      return Response.seeOther(uriBuilder.build()).build();
+    } catch (URISyntaxException e) {
+      LOG.error(e.getMessage());
+      return Response.serverError().entity("Unknown exception.").build();
+    }
   }
   
   public Response buildRedirect(String host, String path, String reason){

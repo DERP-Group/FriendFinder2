@@ -9,6 +9,8 @@ public class LiveFinderConfig {
   @NotNull
   private SteamAccountLinkingConfig steamAccountLinkingConfig;
   @NotNull
+  private AlexaAccountLinkingConfig alexaAccountLinkingConfig;
+  @NotNull
   private String apiKey;
 
   @JsonProperty
@@ -30,5 +32,16 @@ public class LiveFinderConfig {
   public void setSteamAccountLinkingConfig(
       SteamAccountLinkingConfig steamAccountLinkingConfig) {
     this.steamAccountLinkingConfig = steamAccountLinkingConfig;
+  }
+
+  @JsonProperty
+  public AlexaAccountLinkingConfig getAlexaAccountLinkingConfig() {
+    return alexaAccountLinkingConfig;
+  }
+
+  @JsonProperty
+  public void setAlexaAccountLinkingConfig(
+      AlexaAccountLinkingConfig alexaAccountLinkingConfig) {
+    this.alexaAccountLinkingConfig = alexaAccountLinkingConfig;
   }
 }
