@@ -121,7 +121,12 @@ public class AuthResource {
   @Path("/alexa")
   @Produces(MediaType.TEXT_PLAIN) //Should eventually be replaced by a 302 redirect
   public Response doAlexaLinking(@QueryParam("state") String state){
-    String accessToken = UUID.randomUUID().toString();
+    AccountLinkingUser user = new AccountLinkingUser();
+    String userId = UUID.randomUUID().toString();
+    user.setUserId(userId);
+    accountLinkingDAO.updateUser(user);
+    
+    String accessToken = accountLinkingDAO.generateAuthToken(user.getUserId());
     
     StringBuilder urlFragment = new StringBuilder();
     urlFragment.append("token_type=bearer");

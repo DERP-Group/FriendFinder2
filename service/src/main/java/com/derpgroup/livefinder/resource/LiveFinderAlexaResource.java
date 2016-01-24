@@ -122,36 +122,29 @@ public class LiveFinderAlexaResource {
       }
   
       Map<String, Object> sessionAttributes = request.getSession().getAttributes();
-      String userId;
       
-      if(request.getSession() == null || request.getSession().getUser() == null || StringUtils.isEmpty(request.getSession().getUser().getUserId())){
+      if(request.getSession() == null || request.getSession().getUser() == null){
+        String message = "Alexa request did not contain a valid userId.";
+        LOG.error(message);
+        throw new DerpwizardException(message);
+      } 
+      
+      String userId;
+      String accessToken = request.getSession().getUser().getAccessToken();
+      
+      if(StringUtils.isEmpty(request.getSession().getUser().getUserId())){
         String message = "Missing Alexa userId.";
         LOG.error(message);
         throw new DerpwizardException(message);
-      }else if(StringUtils.isEmpty(request.getSession().getUser().getAccessToken()) && !testFlag){
+      }else if(StringUtils.isEmpty(accessToken)){
         throw new DerpwizardException("Unauthorized user - please complete account linking."); //Do account linking prompt here
+      }else if(StringUtils.isEmpty(accountLinkingDAO.getUserIdByAuthToken(accessToken))){
+        throw new DerpwizardException("Token was unknown or had no associated userId - please complete account linking."); //Do account linking prompt here
       }else{
-        String alexaUserId = request.getSession().getUser().getUserId();
-        userId = accountLinkingDAO.getUserIdByInterfaceUserIdAndInterface(alexaUserId, InterfaceName.ALEXA);
-        if(StringUtils.isEmpty(userId)){
-          InterfaceMapping mapping = new InterfaceMapping();
-          userId = UUID.randomUUID().toString();
-          mapping.setUserId(userId);
-          mapping.setInterfaceUserId(alexaUserId);
-          mapping.setInterfaceName(InterfaceName.ALEXA);
-          
-          accountLinkingDAO.addInterfaceMapping(mapping);
-          
-          AccountLinkingUser user = new AccountLinkingUser();
-          user.setUserId(userId);
-          accountLinkingDAO.updateUser(user);
-          
-          sessionAttributes.put("userId", mapping.getUserId());
-        }else{
-          sessionAttributes.put("userId", userId);
-        }
+        userId = accountLinkingDAO.getUserIdByAuthToken(accessToken);
       }
-  
+      sessionAttributes.put("userId", userId);
+      
       mapper.registerModule(new MixInModule());
       CommonMetadata inputMetadata = mapper.convertValue(sessionAttributes, new TypeReference<LiveFinderMetadata>(){});
       outputMetadata = mapper.convertValue(sessionAttributes, new TypeReference<LiveFinderMetadata>(){});

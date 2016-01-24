@@ -18,13 +18,13 @@ public class InMemoryAccountLinkingDAO implements AccountLinkingDAO {
   private static final Logger LOG = LoggerFactory.getLogger(InMemoryAccountLinkingDAO.class);
 
   Map<String,AccountLinkingUser> users;
-  Map<String,InterfaceMapping> interfaceMappings;
   Map<String,String> mappingTokens;
+  Map<String,String> grantedAuthTokens; //Map of token->derpUserId for tokens we have given out
   
   public InMemoryAccountLinkingDAO(){
     users = new HashMap<String,AccountLinkingUser>();
-    interfaceMappings = new HashMap<String,InterfaceMapping>();
     mappingTokens = new HashMap<String,String>();
+    grantedAuthTokens = new HashMap<String,String>();
     
    /* LOG.info("Initializing pre-seeded mapping data.");
     InterfaceMapping mapping = new InterfaceMapping();
@@ -61,21 +61,6 @@ public class InMemoryAccountLinkingDAO implements AccountLinkingDAO {
   }
 
   @Override
-  public String getUserIdByInterfaceUserIdAndInterface(String interfaceUserId, InterfaceName interfaceName) {
-    String compositeKey = interfaceName.name() + "." + interfaceUserId;
-    InterfaceMapping mapping = interfaceMappings.get(compositeKey);
-    if(mapping == null){
-      return null;
-    }
-    return mapping.getUserId();
-  }
-
-  @Override
-  public void addInterfaceMapping(InterfaceMapping interfaceMapping) {
-    interfaceMappings.put(interfaceMapping.getInterfaceName().name() + "." + interfaceMapping.getInterfaceUserId(), interfaceMapping);
-  }
-
-  @Override
   public String generateMappingTokenForUserId(String userId) {
     String mappingToken = UUID.randomUUID().toString();
     mappingTokens.put(mappingToken, userId);
@@ -92,4 +77,20 @@ public class InMemoryAccountLinkingDAO implements AccountLinkingDAO {
     mappingTokens.remove(token);
   }
 
+  @Override
+  public String generateAuthToken(String userId) {
+    String grantedToken = UUID.randomUUID().toString();
+    grantedAuthTokens.put(grantedToken, userId);
+    return grantedToken;
+  }
+
+  @Override
+  public String getUserIdByAuthToken(String token) {
+    return grantedAuthTokens.get(token);
+  }
+
+  @Override
+  public void expireGrantedToken(String token) {
+    grantedAuthTokens.remove(token);
+  }
 }

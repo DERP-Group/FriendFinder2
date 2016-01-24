@@ -9,7 +9,7 @@
       "landingPagePath":"/steam.html"
     },
     "alexaAccountLinkingConfig":{
-      "alexaRedirectUri":"https://pitangui.amazon.com/spa/skill/account-linking-status.html?vendorId=M1IOYIOXZFQCCS"
+      "alexaRedirectUri":"http://www.derpgroup.com/authGrantRedirect.html"
     }
   },
   "server": {
