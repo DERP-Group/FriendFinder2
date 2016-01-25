@@ -21,6 +21,7 @@
 package com.derpgroup.livefinder;
 
 import io.dropwizard.Application;
+import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 
@@ -49,7 +50,10 @@ public class App extends Application<MainConfig> {
   }
 
   @Override
-  public void initialize(Bootstrap<MainConfig> bootstrap) {}
+  public void initialize(Bootstrap<MainConfig> bootstrap) {
+    
+    bootstrap.addBundle(new AssetsBundle("/accountLinking", "/livefinder/accountLinking", "accountLinking.html"));
+  }
 
   @Override
   public void run(MainConfig config, Environment environment) throws IOException {
