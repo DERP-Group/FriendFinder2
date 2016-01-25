@@ -27,8 +27,11 @@ import io.dropwizard.setup.Environment;
 import java.io.IOException;
 
 import com.derpgroup.livefinder.configuration.MainConfig;
+import com.derpgroup.livefinder.dao.AccountLinkingDAO;
+import com.derpgroup.livefinder.dao.impl.InMemoryAccountLinkingDAO;
 import com.derpgroup.livefinder.health.BasicHealthCheck;
 import com.derpgroup.livefinder.model.SteamClientWrapper;
+import com.derpgroup.livefinder.resource.AuthResource;
 import com.derpgroup.livefinder.resource.LiveFinderAlexaResource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -58,8 +61,12 @@ public class App extends Application<MainConfig> {
     // Health checks
     environment.healthChecks().register("basics", new BasicHealthCheck(config, environment));
 
+    // DAO
+    AccountLinkingDAO accountLinkingDAO = new InMemoryAccountLinkingDAO();
+    
     // Resources
-    environment.jersey().register(new LiveFinderAlexaResource(config, environment));
+    environment.jersey().register(new LiveFinderAlexaResource(config, environment, accountLinkingDAO));
+    environment.jersey().register(new AuthResource(config, environment,accountLinkingDAO));
     
     SteamClientWrapper wrapper = SteamClientWrapper.getInstance();
     wrapper.init(config.getLiveFinderConfig().getApiKey());

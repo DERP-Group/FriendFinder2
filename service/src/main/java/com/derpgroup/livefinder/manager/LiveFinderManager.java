@@ -16,9 +16,14 @@ import com.derpgroup.derpwizard.voice.model.ServiceOutput;
 import com.derpgroup.derpwizard.voice.model.SsmlDocumentBuilder;
 import com.derpgroup.derpwizard.voice.model.VoiceInput;
 import com.derpgroup.derpwizard.voice.util.ConversationHistoryUtils;
+import com.derpgroup.livefinder.LiveFinderMetadata;
 import com.derpgroup.livefinder.MixInModule;
+import com.derpgroup.livefinder.dao.AccountLinkingDAO;
 import com.derpgroup.livefinder.model.SteamClientWrapper;
 import com.derpgroup.livefinder.model.UserData;
+import com.derpgroup.livefinder.model.accountlinking.AccountLinkingNotLinkedException;
+import com.derpgroup.livefinder.model.accountlinking.AccountLinkingUser;
+import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
 import com.lukaspradel.steamapi.core.exception.SteamApiException;
 import com.lukaspradel.steamapi.data.json.friendslist.Friend;
 import com.lukaspradel.steamapi.data.json.friendslist.GetFriendList;
@@ -37,6 +42,8 @@ public class LiveFinderManager extends AbstractManager {
   private SteamWebApiClient steamClient;
   private static SteamClientWrapper steamClientWrapper;
   private Map<Integer, String> steamStateValues;
+  
+  private AccountLinkingDAO accountLinkingDAO;
 
   static {
     steamClientWrapper = SteamClientWrapper.getInstance();
@@ -46,9 +53,10 @@ public class LiveFinderManager extends AbstractManager {
     ConversationHistoryUtils.getMapper().registerModule(new MixInModule());
   }
 
-  public LiveFinderManager() {
+  public LiveFinderManager(AccountLinkingDAO accountLinkingDAO) {
     super();
 
+    this.accountLinkingDAO = accountLinkingDAO;
     steamStateValues = new HashMap<Integer, String>();
     steamStateValues.put(1, "online.");
     steamStateValues.put(2, "online, but busy.");
@@ -56,64 +64,6 @@ public class LiveFinderManager extends AbstractManager {
     steamStateValues.put(4, "online, but snoozing.");
     steamStateValues.put(5, "online.");
     steamStateValues.put(6, "online and looking to play!");
-  }
-
-  protected void doConversationRequest2(VoiceInput voiceInput,
-      SsmlDocumentBuilder builder) throws DerpwizardException {
-    steamClient = steamClientWrapper.getClient();
-
-    if (voiceInput.getMessageSubject().equals("STEAM_FRIENDS")) {
-      if (steamClient == null) {
-        String message = "Couldn't build Steam client.";
-        LOG.warn(message);
-        throw new DerpwizardException(new SsmlDocumentBuilder().text(message)
-            .build().getSsml(), message, "No Steam client.");
-      } else {
-        UserData data = getUserData("");
-        List<String> friends = getListOfFriendIdsByUserId(data);
-
-        GetPlayerSummariesRequest playerSummariesRequest = SteamWebApiRequestFactory
-            .createGetPlayerSummariesRequest(friends);
-        // List<String> onlineFriends = new LinkedList<String>();
-        Map<Integer, String> stateValues = new HashMap<Integer, String>();
-        stateValues.put(1, " is online.  ");
-        stateValues.put(2, " is online, but busy.  ");
-        stateValues.put(3, " is online, but away.  ");
-        stateValues.put(4, " is online, but snoozing.  ");
-        stateValues.put(5, " is online.  ");
-        stateValues.put(6, " is online and looking to play!  ");
-        try {
-          GetPlayerSummaries playerSummaries = steamClient
-              .<GetPlayerSummaries> processRequest(playerSummariesRequest);
-          for (Player player : playerSummaries.getResponse().getPlayers()) {
-            Integer state = player.getPersonastate();
-            if (state == null || state <= 0 || state >= 7) {
-              continue;
-            }
-            String username = player.getPersonaname();
-            builder.text(username + stateValues.get(state)).endSentence();
-          }
-        } catch (SteamApiException e) {
-          String message = "Unknown Steam exception '" + e.getMessage() + "'.";
-          LOG.warn(message);
-          throw new DerpwizardException(new SsmlDocumentBuilder().text(message)
-              .build().getSsml(), message, "Unknown Steam exception.");
-        }
-      }
-    } else {
-      String message = "Unknown request type '"
-          + voiceInput.getMessageSubject() + "'.";
-      LOG.warn(message);
-      throw new DerpwizardException(new SsmlDocumentBuilder().text(message)
-          .build().getSsml(), message, "Unknown request.");
-    }
-
-  }
-
-  private UserData getUserData(String string) {
-    UserData userData = new UserData();
-    userData.setSteamId("76561198019030536"); // Hardcoded to Eric's ID for now
-    return userData;
   }
 
   @Override
@@ -195,13 +145,24 @@ public class LiveFinderManager extends AbstractManager {
         LOG.warn(message);
         throw new DerpwizardException(new SsmlDocumentBuilder().text(message).build().getSsml(), message, message);
     }
-    
   }
   
   private void findSteamFriends(VoiceInput voiceInput, ServiceOutput serviceOutput) throws DerpwizardException{
     steamClient = steamClientWrapper.getClient();
-    UserData data = getUserData("");
-    List<String> friends = getListOfFriendIdsByUserId(data);
+    
+    String userId = ((LiveFinderMetadata)voiceInput.getMetadata()).getUserId();
+    
+    if(StringUtils.isEmpty(userId)){
+      String message = "Missing userId.";
+      LOG.error(message);
+      throw new DerpwizardException(message);
+    }
+    
+    AccountLinkingUser user = accountLinkingDAO.getUserByUserId(userId);
+    if(user == null || StringUtils.isEmpty(user.getSteamId())){
+      throw new AccountLinkingNotLinkedException(InterfaceName.STEAM);
+    }
+    List<String> friends = getListOfFriendIdsByUserId(user.getSteamId());
     
     GetPlayerSummaries playerSummaries;
     try {
@@ -242,8 +203,8 @@ public class LiveFinderManager extends AbstractManager {
     }
   }
 
-  public List<String> getListOfFriendIdsByUserId(UserData data) throws DerpwizardException {
-    GetFriendListRequest friendListRequest = SteamWebApiRequestFactory.createGetFriendListRequest(data.getSteamId());
+  public List<String> getListOfFriendIdsByUserId(String steamId) throws DerpwizardException {
+    GetFriendListRequest friendListRequest = SteamWebApiRequestFactory.createGetFriendListRequest(steamId);
     List<String> friends = new LinkedList<String>();
     try {
       GetFriendList friendList = steamClient.<GetFriendList> processRequest(friendListRequest);

@@ -20,10 +20,11 @@
 
 package com.derpgroup.livefinder.resource;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Map;
+import java.util.UUID;
 
 import io.dropwizard.setup.Environment;
 
@@ -36,12 +37,15 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazon.speech.json.SpeechletRequestEnvelope;
 import com.amazon.speech.json.SpeechletResponseEnvelope;
 import com.amazon.speech.speechlet.SpeechletResponse;
+import com.amazon.speech.ui.Card;
+import com.amazon.speech.ui.OutputSpeech;
 import com.amazon.speech.ui.Reprompt;
 import com.amazon.speech.ui.SimpleCard;
 import com.amazon.speech.ui.SsmlOutputSpeech;
@@ -51,13 +55,19 @@ import com.derpgroup.derpwizard.voice.exception.DerpwizardException.DerpwizardEx
 import com.derpgroup.derpwizard.alexa.AlexaUtils;
 import com.derpgroup.derpwizard.voice.model.CommonMetadata;
 import com.derpgroup.derpwizard.voice.model.ServiceOutput;
+import com.derpgroup.derpwizard.voice.model.SsmlDocumentBuilder;
 import com.derpgroup.derpwizard.voice.model.VoiceInput;
 import com.derpgroup.derpwizard.voice.model.VoiceMessageFactory;
 import com.derpgroup.derpwizard.voice.model.VoiceMessageFactory.InterfaceType;
 import com.derpgroup.livefinder.LiveFinderMetadata;
 import com.derpgroup.livefinder.MixInModule;
 import com.derpgroup.livefinder.configuration.MainConfig;
+import com.derpgroup.livefinder.dao.AccountLinkingDAO;
 import com.derpgroup.livefinder.manager.LiveFinderManager;
+import com.derpgroup.livefinder.model.accountlinking.AccountLinkingNotLinkedException;
+import com.derpgroup.livefinder.model.accountlinking.AccountLinkingUser;
+import com.derpgroup.livefinder.model.accountlinking.InterfaceMapping;
+import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -73,15 +83,25 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class LiveFinderAlexaResource {
 
   private static final Logger LOG = LoggerFactory.getLogger(LiveFinderAlexaResource.class);
-  
-  private static final List<String> UNSUPPORTED_SSML_TAGS = Collections.unmodifiableList(Arrays.asList(
-      "emphasis"
-      ));
 
   private LiveFinderManager manager;
   
-  public LiveFinderAlexaResource(MainConfig config, Environment env) {
-    manager = new LiveFinderManager();
+  private AccountLinkingDAO accountLinkingDAO;
+  
+  private ObjectMapper mapper;
+  
+  String linkingFlowHostname;
+  String linkingFlowProtocol;
+  String landingPagePath;
+  
+  public LiveFinderAlexaResource(MainConfig config, Environment env, AccountLinkingDAO accountLinkingDAO) {
+    this.accountLinkingDAO = accountLinkingDAO;
+    manager = new LiveFinderManager(accountLinkingDAO);
+    mapper = new ObjectMapper();
+    
+    linkingFlowHostname = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getLinkingFlowHostname();
+    linkingFlowProtocol = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getLinkingFlowProtocol();
+    landingPagePath = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getLandingPagePath();
   }
 
   /**
@@ -90,18 +110,41 @@ public class LiveFinderAlexaResource {
   @POST
   public SpeechletResponseEnvelope doAlexaRequest(SpeechletRequestEnvelope request, @HeaderParam("SignatureCertChainUrl") String signatureCertChainUrl, 
       @HeaderParam("Signature") String signature, @QueryParam("testFlag") Boolean testFlag){
-    ObjectMapper mapper = new ObjectMapper();
+    
     LiveFinderMetadata outputMetadata = null;
     try {
       if (request.getRequest() == null) {
-        throw new DerpwizardException(DerpwizardExceptionReasons.MISSING_INFO.getSsml(),"Missing request body."); //TODO: create AlexaException
+        throw new DerpwizardException(DerpwizardExceptionReasons.MISSING_INFO.getSsml(),"Missing request body.");
       }
-      if(testFlag == null || testFlag == false){ 
-        AlexaUtils.validateAlexaRequest(request, signatureCertChainUrl, signature);
+      if(testFlag == null || !testFlag){ 
+        //Figure out whether this is needed with Lambda bounce
+        //AlexaUtils.validateAlexaRequest(request, signatureCertChainUrl, signature);
       }
   
       Map<String, Object> sessionAttributes = request.getSession().getAttributes();
-  
+      
+      if(request.getSession() == null || request.getSession().getUser() == null){
+        String message = "Alexa request did not contain a valid userId.";
+        LOG.error(message);
+        throw new DerpwizardException(message);
+      } 
+      
+      String userId;
+      String accessToken = request.getSession().getUser().getAccessToken();
+      
+      if(StringUtils.isEmpty(request.getSession().getUser().getUserId())){
+        String message = "Missing Alexa userId.";
+        LOG.error(message);
+        throw new DerpwizardException(message);
+      }else if(StringUtils.isEmpty(accessToken)){
+        throw new DerpwizardException("Unauthorized user - please complete account linking."); //Do account linking prompt here
+      }else if(StringUtils.isEmpty(accountLinkingDAO.getUserIdByAuthToken(accessToken))){
+        throw new DerpwizardException("Token was unknown or had no associated userId - please complete account linking."); //Do account linking prompt here
+      }else{
+        userId = accountLinkingDAO.getUserIdByAuthToken(accessToken);
+      }
+      sessionAttributes.put("userId", userId);
+      
       mapper.registerModule(new MixInModule());
       CommonMetadata inputMetadata = mapper.convertValue(sessionAttributes, new TypeReference<LiveFinderMetadata>(){});
       outputMetadata = mapper.convertValue(sessionAttributes, new TypeReference<LiveFinderMetadata>(){});
@@ -112,16 +155,17 @@ public class LiveFinderAlexaResource {
       serviceOutput.setConversationEnded(false);
 
       VoiceInput voiceInput = VoiceMessageFactory.buildInputMessage(request.getRequest(), inputMetadata, InterfaceType.ALEXA);
-      manager.handleRequest(voiceInput, serviceOutput);
-  
-      Map<String,Object> sessionAttributesOutput = mapper.convertValue(outputMetadata, new TypeReference<Map<String,Object>>(){});
-      SpeechletResponseEnvelope responseEnvelope = new SpeechletResponseEnvelope();
-      responseEnvelope.setSessionAttributes(sessionAttributesOutput);
-
-      SpeechletResponse speechletResponse = new SpeechletResponse();
+      
+      try{
+        manager.handleRequest(voiceInput, serviceOutput);
+      }catch(AccountLinkingNotLinkedException e){
+        return doAccountLinking(e.getInterfaceName(), outputMetadata, userId);
+      }
+      
       SimpleCard card;
       SsmlOutputSpeech outputSpeech;
       Reprompt reprompt = null;
+      boolean shouldEndSession = false;
       
       switch(voiceInput.getMessageType()){
       case END_OF_CONVERSATION:
@@ -129,7 +173,7 @@ public class LiveFinderAlexaResource {
       case CANCEL:
         outputSpeech = null;
         card = null;
-        speechletResponse.setShouldEndSession(true);
+        shouldEndSession = true;
         break;
       default:
         if(StringUtils.isNotEmpty(serviceOutput.getVisualOutput().getTitle())&&
@@ -150,16 +194,11 @@ public class LiveFinderAlexaResource {
 
         outputSpeech = new SsmlOutputSpeech();
         outputSpeech.setSsml("<speak>"+serviceOutput.getVoiceOutput().getSsmltext()+"</speak>");
-        speechletResponse.setShouldEndSession(serviceOutput.isConversationEnded());
+        shouldEndSession = serviceOutput.isConversationEnded();
         break;
       }
-
-      speechletResponse.setOutputSpeech(outputSpeech);
-      speechletResponse.setCard(card);
-      speechletResponse.setReprompt(reprompt);
-      responseEnvelope.setResponse(speechletResponse);
-
-      return responseEnvelope;
+      
+      return buildOutput(outputSpeech, card, reprompt, shouldEndSession, outputMetadata);
     }catch(DerpwizardException e){
       LOG.debug(e.getMessage());
       return new DerpwizardExceptionAlexaWrapper(e, "1.0",mapper.convertValue(outputMetadata, new TypeReference<Map<String,Object>>(){}));
@@ -167,5 +206,53 @@ public class LiveFinderAlexaResource {
       LOG.debug(t.getMessage());
       return new DerpwizardExceptionAlexaWrapper(new DerpwizardException(t.getMessage()),"1.0", mapper.convertValue(outputMetadata, new TypeReference<Map<String,Object>>(){}));
     }
+  }
+
+  private SpeechletResponseEnvelope doAccountLinking(InterfaceName interfaceName, LiveFinderMetadata outputMetadata, String userId) throws DerpwizardException {
+
+    //If this is the approach for linking to the third parties, it should be made generic and added to a manager
+    //If the approach ends up being to use LinkAccount cards, however, then that is implementation specific, and can't be made generic
+    String output = "Could not find a linked " + interfaceName.name() + " account.  To link one, please follow the account linking instructions in the Alexa app on your phone, tablet, or browser.";
+    URI linkingUri;
+    try {
+      linkingUri = new URIBuilder().setScheme(linkingFlowProtocol).setHost(linkingFlowHostname).setPath(landingPagePath)
+          .setParameter("mappingToken", accountLinkingDAO.generateMappingTokenForUserId(userId)).build();
+    } catch (URISyntaxException e) {
+      throw new DerpwizardException("<speak>Could not process request.</speak>","Could not build a valid linking URI, due to exception.");
+    }
+    
+    String cardTitle = interfaceName.name() + " account linking.";
+    StringBuilder cardTextBuilder = new StringBuilder();
+    cardTextBuilder.append("Please copy the link below into a browser window and follow the instructions to link your account.");
+    cardTextBuilder.append("\n\n");
+    cardTextBuilder.append(linkingUri.toString());
+    
+    SsmlOutputSpeech outputSpeech = new SsmlOutputSpeech();
+    outputSpeech.setSsml(new SsmlDocumentBuilder().text(output).build().getSsml());
+    
+    SimpleCard card = new SimpleCard();
+    card.setTitle(cardTitle);
+    card.setContent(cardTextBuilder.toString());
+    
+    return buildOutput(outputSpeech, card, null, true, outputMetadata);
+  }
+  
+  private SpeechletResponseEnvelope buildOutput(OutputSpeech outputSpeech, Card card, Reprompt reprompt, boolean shouldEndSession, LiveFinderMetadata outputMetadata){
+
+    Map<String,Object> sessionAttributes = mapper.convertValue(outputMetadata, new TypeReference<Map<String,Object>>(){});
+    SpeechletResponseEnvelope responseEnvelope = new SpeechletResponseEnvelope();
+    
+    SpeechletResponse speechletResponse = new SpeechletResponse();
+
+    speechletResponse.setOutputSpeech(outputSpeech);
+    speechletResponse.setCard(card);
+    speechletResponse.setReprompt(reprompt);
+    speechletResponse.setShouldEndSession(shouldEndSession);
+    
+    responseEnvelope.setResponse(speechletResponse);
+    
+    responseEnvelope.setSessionAttributes(sessionAttributes);
+
+    return responseEnvelope;
   }
 }

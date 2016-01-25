@@ -7,6 +7,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class LiveFinderConfig {
   
   @NotNull
+  private SteamAccountLinkingConfig steamAccountLinkingConfig;
+  @NotNull
+  private AlexaAccountLinkingConfig alexaAccountLinkingConfig;
+  @NotNull
   private String apiKey;
 
   @JsonProperty
@@ -17,5 +21,27 @@ public class LiveFinderConfig {
   @JsonProperty
   public void setApiKey(String apiKey) {
     this.apiKey = apiKey;
+  }
+
+  @JsonProperty
+  public SteamAccountLinkingConfig getSteamAccountLinkingConfig() {
+    return steamAccountLinkingConfig;
+  }
+
+  @JsonProperty
+  public void setSteamAccountLinkingConfig(
+      SteamAccountLinkingConfig steamAccountLinkingConfig) {
+    this.steamAccountLinkingConfig = steamAccountLinkingConfig;
+  }
+
+  @JsonProperty
+  public AlexaAccountLinkingConfig getAlexaAccountLinkingConfig() {
+    return alexaAccountLinkingConfig;
+  }
+
+  @JsonProperty
+  public void setAlexaAccountLinkingConfig(
+      AlexaAccountLinkingConfig alexaAccountLinkingConfig) {
+    this.alexaAccountLinkingConfig = alexaAccountLinkingConfig;
   }
 }
