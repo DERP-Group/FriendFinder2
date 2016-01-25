@@ -3,15 +3,14 @@
 	<head>
 	<meta charset="ISO-8859-1">
 	<title>LiveFinder Account Linking</title>
+	<script type="text/javascript" src="./js/qwery.min.js"></script>
+	<script type="text/javascript" src="./js/reqwest.min.js"></script>
 	<script type="text/javascript" src="./js/micro-query.js"></script>
 	<script type="text/javascript" src="./js/accountLinking.js"></script>
 	</head>
 	<body>
-		<form id="steamIdForm" action="http://eric.testserver.derpgroup.com:9080/livefinder/auth/steam/linkIds">
 		<label for="steamIdInput">Steam Id:</label>
-		<input type="text" name="externalId" placeholder="SteamId goes here">
-		<input type="hidden" name="mappingToken" id="mappingTokenInput" />
-		<button type="button" onclick="doXHR();">Submit</button>
-		</form>
+		<input type="text" name="externalId" id="steamExternalId" placeholder="SteamId goes here">
+		<button type="button" id ="steamSubmitButton" onclick="linkSteamId();">Submit</button>
 	</body>
 </html>

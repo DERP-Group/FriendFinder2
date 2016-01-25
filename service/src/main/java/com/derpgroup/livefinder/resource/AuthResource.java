@@ -33,6 +33,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
@@ -81,9 +82,39 @@ public class AuthResource {
   }
   
   @GET
+  @Path("/mappingToken")
+  @Produces(MediaType.APPLICATION_JSON)
+  public AccountLinkingUser getUserByMappingToken(@QueryParam("token") String mappingToken){
+    if(StringUtils.isEmpty(mappingToken)){
+      LOG.error("No valid mapping token was provided.");
+      throw new WebApplicationException("No valid mapping token was provided.",Response.Status.UNAUTHORIZED);
+      //TODO: Make this not throw html errors
+    }
+    
+    LOG.debug("Looking up userId for mappingToken '" + mappingToken + "'.");
+    String userId = accountLinkingDAO.getUserIdByMappingToken(mappingToken);
+    
+    if(StringUtils.isEmpty(userId)){
+      LOG.error("No valid user details were associated with the token provided.");
+      throw new WebApplicationException("No valid user details were associated with the token provided.",Response.Status.FORBIDDEN);
+    }
+    
+    LOG.debug("Retrieving user details for derpId '" + userId + "'.");
+    AccountLinkingUser user = accountLinkingDAO.getUserByUserId(userId);
+    
+    if(user == null){
+      LOG.error("No valid user details were associated with the token provided.");
+      throw new WebApplicationException("No valid user details were associated with the token provided.",Response.Status.FORBIDDEN);
+    }
+    
+    return user;
+  }
+  
+  @GET
   @Path("/steam/linkIds")
   @Produces(MediaType.TEXT_PLAIN)
   public Response doSteamLinking(@QueryParam("mappingToken") String mappingToken, @QueryParam("externalId") String externalId){
+    //TODO: Refactor to be generic?
     
     String derpId;
     if(mappingToken == null){
