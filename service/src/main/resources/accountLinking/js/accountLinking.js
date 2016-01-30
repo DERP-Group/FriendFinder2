@@ -1,6 +1,3 @@
-/**
- * 
- */
 document.addEventListener('DOMContentLoaded', function() {
     init();
 }, false);
@@ -10,22 +7,29 @@ var mappingTokenError;
 var linkSteamIdResponse;
 var linkSteamIdError;
 var token;
+var state;
+var accessToken;
+var transparentRegistrationRequest;
+var accessToken;
 
 function init(){
 	//Grab token from query params
-	token = window.uQuery('token');
+	token = window.uQuery('sessionToken');
+	state = window.uQuery('state');
 	
 	if(token){
-		var url = 'http://127.0.0.1:9080/livefinder/auth/mappingToken?token=' + token;
+		var url = '/livefinder/auth/mappingToken?token=' + token;
 		reqwest({
 		    url: url
 		    , method: 'get'
 		    , type: 'json'
 		    , contentType: 'application/json'
 		}).then(redeemMappingTokenSuccess, redeemMappingTokenFailure);
-	}else{
-		alert('A valid token was not provided.');
+	}else if(state){
+		transparentRegistration();
 	}
+
+	qwery('#accountLinkingForm')[0].onchange = hideNotificationDiv;
 }
 
 function redeemMappingTokenSuccess(response){
@@ -49,13 +53,14 @@ function populateForm(userAccount){
 function linkSteamId(){
 	var steamId = qwery('#steamExternalId')[0].value;
 	if(steamId){
-		var url = 'http://127.0.0.1:9080/livefinder/auth/steam/linkIds?mappingToken=' + token + '&externalId=' + steamId;
+		var url = '/livefinder/auth/steam/linkIds?mappingToken=' + token + '&externalId=' + steamId;
 		reqwest({
 		    url: url
 		    , method: 'get'
 		    , type: 'json'
 		    , contentType: 'application/json'
-		}).then(linkSteamIdSuccess, linkSteamIdFailure);
+		}).then(linkSteamIdSuccess, linkSteamIdFailure)
+		.always(displayNotificationDiv);
 	}else{
 		alert('A valid steamId must be provided.');
 	}
@@ -63,9 +68,62 @@ function linkSteamId(){
 
 function linkSteamIdSuccess(response){
 	linkSteamIdResponse = response;
+	qwery('#notificationDiv')[0].textContent = "Successfully updated user info.";
 } 
 
 function linkSteamIdFailure(error, message){
 	linkSteamIdError = error;
-	alert(error.responseText);
+	qwery('#notificationDiv')[0].textContent = "Failed to update user info: " + error;
+}
+
+function displayNotificationDiv(){
+	qwery('#notificationDiv')[0].style.display = 'block';
+}
+
+function hideNotificationDiv(){
+	qwery('#notificationDiv')[0].style.display = 'none';
+}
+
+function transparentRegistration(){
+
+	var url = '/livefinder/auth/alexa';
+	transparentRegistrationRequest = reqwest({
+	    url: url
+	    , method: 'get'
+	    , type: 'json'
+	    , contentType: 'application/json'
+	}).then(transparentRegistrationSuccess, transparentRegistrationFailure);
+}
+
+function transparentRegistrationSuccess(response){
+	populateForm(response);
+	qwery('#registrationSubmitButton')[0].style.display = 'block';
+	accessToken = transparentRegistrationRequest.request.getResponseHeader('Access-Token');
+} 
+
+function transparentRegistrationFailure(error, message){
+	qwery('#notificationDiv')[0].textContent = "Failed to create user accoun for Alexa session: " + error;
+	displayNotificationDiv();
+	qwery('#steamSubmitButton')[0].disabled = true;
+	qwery('#registrationSubmitButton')[0].disabled = true;
+}
+
+function submitRegistration(){
+	var uri = "https://pitangui.amazon.com/spa/skill/account-linking-status.html";
+	var fragment = '#'; 
+	fragment += 'state=' + state;
+	fragment += '&access_token=' + accessToken;
+	fragment += '&token_type=Bearer';
+	
+	var url = uri + fragment;
+	console.log('url: ' + url);
+	qwery('#accountLinkingForm')[0].action = url;
+	qwery('#accountLinkingForm')[0].submit();
+	/*reqwest({
+	    url: url
+	    , method: 'get'
+	    , type: 'json'
+	    , contentType: 'application/json'
+	}).then(linkSteamIdSuccess, linkSteamIdFailure)
+	.always(displayNotificationDiv);*/
 }

@@ -7,16 +7,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class AlexaAccountLinkingConfig {
 
   @NotNull
-  private String alexaRedirectUri;
+  private String alexaRedirectPath;
   
   @JsonProperty()
-  public String getAlexaRedirectUri() {
-    // TODO Auto-generated method stub
-    return alexaRedirectUri;
+  public String getAlexaRedirectPath() {
+    return alexaRedirectPath;
   }
 
   @JsonProperty()
-  public void setAlexaRedirectUri(String alexaRedirectUri) {
-    this.alexaRedirectUri = alexaRedirectUri;
+  public void setAlexaRedirectPath(String alexaRedirectPath) {
+    this.alexaRedirectPath = alexaRedirectPath;
   }
 }

@@ -216,7 +216,7 @@ public class LiveFinderAlexaResource {
     URI linkingUri;
     try {
       linkingUri = new URIBuilder().setScheme(linkingFlowProtocol).setHost(linkingFlowHostname).setPath(landingPagePath)
-          .setParameter("mappingToken", accountLinkingDAO.generateMappingTokenForUserId(userId)).build();
+          .setParameter("sessionToken", accountLinkingDAO.generateMappingTokenForUserId(userId)).build();
     } catch (URISyntaxException e) {
       throw new DerpwizardException("<speak>Could not process request.</speak>","Could not build a valid linking URI, due to exception.");
     }

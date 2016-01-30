@@ -7,10 +7,31 @@
 	<script type="text/javascript" src="./js/reqwest.min.js"></script>
 	<script type="text/javascript" src="./js/micro-query.js"></script>
 	<script type="text/javascript" src="./js/accountLinking.js"></script>
+	<style>
+		#registrationSubmitButton,#usernameDiv{
+			display: none;
+		}
+		
+		#notificationDiv{
+			display: none;
+			background-color: grey;
+		}
+	</style>
 	</head>
 	<body>
-		<label for="steamIdInput">Steam Id:</label>
-		<input type="text" name="externalId" id="steamExternalId" placeholder="SteamId goes here">
-		<button type="button" id ="steamSubmitButton" onclick="linkSteamId();">Submit</button>
+		<form id="accountLinkingForm" action="">
+			<div id="notificationDiv"></div>
+			<div id="usernameDiv">
+				<label for="username">Username:</label>
+				<input type="text" id="username" placeholder="Username (optional)">
+			</div>
+			<div>
+				<label for="steamIdInput">Steam Id:</label>
+				<input type="text" id="steamExternalId" placeholder="Steam Id (optional)">
+			</div>
+			<input type="hidden" name="vendorId" id="alexaVendorId" value="M1IOYIOXZFQCCS"/>
+			<button type="button" id="steamSubmitButton" onclick="linkSteamId();">Link Steam ID</button>
+			<button type="submit" id="registrationSubmitButton" onclick="submitRegistration();">Complete Account Linking</button>
+		</form>
 	</body>
 </html>

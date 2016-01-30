@@ -46,6 +46,11 @@ public class InMemoryAccountLinkingDAO implements AccountLinkingDAO {
     AccountLinkingUser user2 = new AccountLinkingUser(); //Second user with no mappings set, for testing the mapping flow
     user2.setUserId("47e38fdf-d5ba-4491-9c3c-1f028d02483b");
     users.put("47e38fdf-d5ba-4491-9c3c-1f028d02483b", user2);*/
+    
+    AccountLinkingUser user = new AccountLinkingUser();
+    user.setUserId("def456");
+    users.put("def456", user);
+    mappingTokens.put("abc123", "def456");
   }
   
   @Override

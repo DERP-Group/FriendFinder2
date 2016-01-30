@@ -33,7 +33,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
@@ -43,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import com.derpgroup.livefinder.configuration.MainConfig;
 import com.derpgroup.livefinder.dao.AccountLinkingDAO;
 import com.derpgroup.livefinder.model.accountlinking.AccountLinkingUser;
+import com.derpgroup.livefinder.model.accountlinking.LandingPageErrorResponse;
 
 /**
  * REST APIs for requests generating from authentication flows
@@ -61,7 +61,7 @@ public class AuthResource {
   private String steamLinkingFlowHostname;
   private String steamSuccessPagePath;
   private String steamErrorPagePath;
-  private String alexaRedirectUri;
+  private String alexaRedirectPath;
   
   
   public AuthResource(MainConfig config, Environment env, AccountLinkingDAO accountLinkingDAO) {
@@ -71,7 +71,7 @@ public class AuthResource {
     steamSuccessPagePath = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getSuccessPagePath();
     steamErrorPagePath = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getErrorPagePath();
     
-    alexaRedirectUri = config.getLiveFinderConfig().getAlexaAccountLinkingConfig().getAlexaRedirectUri();
+    alexaRedirectPath = config.getLiveFinderConfig().getAlexaAccountLinkingConfig().getAlexaRedirectPath();
   }
   
   @GET
@@ -112,28 +112,40 @@ public class AuthResource {
   
   @GET
   @Path("/steam/linkIds")
-  @Produces(MediaType.TEXT_PLAIN)
-  public Response doSteamLinking(@QueryParam("mappingToken") String mappingToken, @QueryParam("externalId") String externalId){
+  @Produces(MediaType.APPLICATION_JSON)
+  public Object doSteamLinking(@QueryParam("mappingToken") String mappingToken, @QueryParam("externalId") String externalId){
     //TODO: Refactor to be generic?
     
     String derpId;
     if(mappingToken == null){
-      return buildRedirect(steamLinkingFlowHostname,steamErrorPagePath,"Missing required parameter 'mappingToken'");
+      String error = "Missing required parameter 'mappingToken'";
+      return Response.status(Response.Status.BAD_REQUEST).entity(new LandingPageErrorResponse(this, error)).build();
+//      return new LandingPageErrorResponse(this, error);
+//      return buildRedirect(steamErrorPagePath,steamLinkingFlowHostname,error);
     }else{
       LOG.debug("Looking up userId for mappingToken '" + mappingToken + "'.");
       derpId = accountLinkingDAO.getUserIdByMappingToken(mappingToken);
     }
     if(externalId == null){
-      return buildRedirect(steamLinkingFlowHostname,steamErrorPagePath,"Missing required parameter 'externalId'");
+      String error = "Missing required parameter 'externalId'";
+      return Response.status(Response.Status.BAD_REQUEST).entity(new LandingPageErrorResponse(this, error)).build();
+//      return new LandingPageErrorResponse(this, error);
+//      return buildRedirect(steamErrorPagePath,steamLinkingFlowHostname,error);
     }
     if(derpId == null){
-      return buildRedirect(steamLinkingFlowHostname,steamErrorPagePath,"Token could not be resolved to a known user.");
+      String error = "Token could not be resolved to a known user.";
+      return Response.status(Response.Status.BAD_REQUEST).entity(new LandingPageErrorResponse(this, error)).build();
+//      return new LandingPageErrorResponse(this, error);
+//      return buildRedirect(steamErrorPagePath,steamLinkingFlowHostname,error);
     }
     
     LOG.debug("Looking up user for userId '" + derpId + "'.");
     AccountLinkingUser user = accountLinkingDAO.getUserByUserId(derpId);
     if(user == null){
-      return buildRedirect(steamLinkingFlowHostname,steamErrorPagePath,"Couldn't find user with derpId '" + derpId + "'.");
+      String error = "Couldn't find user with derpId '" + derpId + "'.";
+      return Response.status(Response.Status.BAD_REQUEST).entity(new LandingPageErrorResponse(this, error)).build();
+//      return new LandingPageErrorResponse(this, error);
+//      return buildRedirect(steamErrorPagePath,steamLinkingFlowHostname,error);
     }
     
     if(user.getSteamId() == null){
@@ -145,51 +157,61 @@ public class AuthResource {
     
     accountLinkingDAO.updateUser(user);
 
-    return buildRedirect(steamLinkingFlowHostname,steamSuccessPagePath,null);
+    /*return buildRedirect(steamSuccessPagePath,null);*/
+//    return Response.ok("{\"response\":\"Successfully linked account!\"}").build();
+    return user;
   }
 
   @GET
   @Path("/alexa")
-  @Produces(MediaType.TEXT_PLAIN) //Should eventually be replaced by a 302 redirect
-  public Response doAlexaLinking(@QueryParam("state") String state){
+  @Produces(MediaType.APPLICATION_JSON) 
+  public Response doAlexaLinking(){
     AccountLinkingUser user = new AccountLinkingUser();
     String userId = UUID.randomUUID().toString();
     user.setUserId(userId);
     accountLinkingDAO.updateUser(user);
     
     String accessToken = accountLinkingDAO.generateAuthToken(user.getUserId());
-    
-    StringBuilder urlFragment = new StringBuilder();
-    urlFragment.append("token_type=bearer");
-    urlFragment.append("&");
-    urlFragment.append("state=");
-    urlFragment.append(state);
-    urlFragment.append("&");
-    urlFragment.append("access_token=");
-    urlFragment.append(accessToken);
+
+    /*
     
     URIBuilder uriBuilder;
     try {
-      uriBuilder = new URIBuilder(alexaRedirectUri);
+      uriBuilder = new URIBuilder(alexaRedirectPath);
     } catch (URISyntaxException e) {
       throw new WebApplicationException("Error");
     }
     uriBuilder.setFragment(urlFragment.toString());
-    LOG.info("Redirect URI: " + uriBuilder.toString());
-    try {
-      return Response.seeOther(uriBuilder.build()).build();
-    } catch (URISyntaxException e) {
-      LOG.error(e.getMessage());
-      return Response.serverError().entity("Unknown exception.").build();
-    }
+    LOG.info("Redirect URI: " + uriBuilder.toString());*/
+//    LOG.info("Access Token: " + accessToken);
+//    return buildRedirect(alexaRedirectPath,null,null,urlFragment.toString());
+    return Response.ok(user).header("Access-Token", accessToken).build();
   }
   
-  public Response buildRedirect(String host, String path, String reason){
+  public Response buildRedirect(String path, String reason){
+    return buildRedirect(path, null, reason);
+  }
+  
+  public Response buildRedirect(String path, String host, String reason){
+    return buildRedirect(path, host, reason, null);
+  }
+  
+  public Response buildRedirect(String path, String host, String reason, String fragment){
     URIBuilder uriBuilder = new URIBuilder();
-    uriBuilder.setHost(host).setPath(path);
+    uriBuilder.setPath(path);
+    if(!StringUtils.isEmpty(host)){
+      uriBuilder.setPath(host);
+    }
+    if(!StringUtils.isEmpty(path)){
+      uriBuilder.setPath(path);
+    }
     if(!StringUtils.isEmpty(reason)){
       uriBuilder.addParameter("reason", reason);
     }
+    if(!StringUtils.isEmpty(fragment)){
+      uriBuilder.setFragment(fragment);
+    }
+
     try {
       return Response.seeOther(uriBuilder.build()).build();
     } catch (URISyntaxException e) {

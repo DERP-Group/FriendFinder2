@@ -6,8 +6,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class SteamAccountLinkingConfig {
 
+  /**
+   * NOTE: This must be set via the command line at launch of the service 
+   * i.e. -Ddw.liveFinderConfig.steamAccountLinkingConfig.linkingFlowHostname=eric.testserver.derpgroup.com:9080
+   * We probably need some smarter logic here...
+   */
   @NotNull
-  private String linkingFlowHostname;
+  private String linkingFlowHostname; 
   @NotNull
   private String linkingFlowProtocol;
   @NotNull
