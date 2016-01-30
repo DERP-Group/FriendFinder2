@@ -2,15 +2,15 @@ document.addEventListener('DOMContentLoaded', function() {
     init();
 }, false);
 
-var mappingTokenResponse;
-var mappingTokenError;
-var linkSteamIdResponse;
-var linkSteamIdError;
+var mappingTokenResponse; //For debugging
+var mappingTokenError; //For debugging
+var linkSteamIdResponse; //For debugging
+var linkSteamIdError; //For debugging
 var token;
 var state;
 var accessToken;
 var transparentRegistrationRequest;
-var accessToken;
+var mappingTokenRequest;
 
 function init(){
 	//Grab token from query params
@@ -19,7 +19,7 @@ function init(){
 	
 	if(token){
 		var url = '/livefinder/auth/mappingToken?token=' + token;
-		reqwest({
+		mappingTokenRequest = reqwest({
 		    url: url
 		    , method: 'get'
 		    , type: 'json'
@@ -34,6 +34,7 @@ function init(){
 
 function redeemMappingTokenSuccess(response){
 	mappingTokenResponse = response;
+	accessToken = mappingTokenRequest.request.getResponseHeader('Access-Token');
 	populateForm(response);
 } 
 
@@ -53,7 +54,7 @@ function populateForm(userAccount){
 function linkSteamId(){
 	var steamId = qwery('#steamExternalId')[0].value;
 	if(steamId){
-		var url = '/livefinder/auth/steam/linkIds?mappingToken=' + token + '&externalId=' + steamId;
+		var url = '/livefinder/auth/steam/linkIds?accessToken=' + accessToken + '&externalId=' + steamId;
 		reqwest({
 		    url: url
 		    , method: 'get'
@@ -102,7 +103,7 @@ function transparentRegistrationSuccess(response){
 } 
 
 function transparentRegistrationFailure(error, message){
-	qwery('#notificationDiv')[0].textContent = "Failed to create user accoun for Alexa session: " + error;
+	qwery('#notificationDiv')[0].textContent = "Failed to create user account for Alexa session: " + error;
 	displayNotificationDiv();
 	qwery('#steamSubmitButton')[0].disabled = true;
 	qwery('#registrationSubmitButton')[0].disabled = true;

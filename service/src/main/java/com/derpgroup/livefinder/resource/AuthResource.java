@@ -84,7 +84,7 @@ public class AuthResource {
   @GET
   @Path("/mappingToken")
   @Produces(MediaType.APPLICATION_JSON)
-  public AccountLinkingUser getUserByMappingToken(@QueryParam("token") String mappingToken){
+  public Response getUserByMappingToken(@QueryParam("token") String mappingToken){
     if(StringUtils.isEmpty(mappingToken)){
       LOG.error("No valid mapping token was provided.");
       throw new WebApplicationException("No valid mapping token was provided.",Response.Status.UNAUTHORIZED);
@@ -107,24 +107,26 @@ public class AuthResource {
       throw new WebApplicationException("No valid user details were associated with the token provided.",Response.Status.FORBIDDEN);
     }
     
-    return user;
+    String accessToken = accountLinkingDAO.generateAuthToken(user.getUserId());
+    
+    return Response.ok(user).header("Access-Token", accessToken).build();
   }
   
   @GET
   @Path("/steam/linkIds")
   @Produces(MediaType.APPLICATION_JSON)
-  public Object doSteamLinking(@QueryParam("mappingToken") String mappingToken, @QueryParam("externalId") String externalId){
+  public Object doSteamLinking(@QueryParam("accessToken") String accessToken, @QueryParam("externalId") String externalId){
     //TODO: Refactor to be generic?
     
     String derpId;
-    if(mappingToken == null){
-      String error = "Missing required parameter 'mappingToken'";
+    if(accessToken == null){
+      String error = "Missing required parameter 'accessToken'";
       return Response.status(Response.Status.BAD_REQUEST).entity(new LandingPageErrorResponse(this, error)).build();
 //      return new LandingPageErrorResponse(this, error);
 //      return buildRedirect(steamErrorPagePath,steamLinkingFlowHostname,error);
     }else{
-      LOG.debug("Looking up userId for mappingToken '" + mappingToken + "'.");
-      derpId = accountLinkingDAO.getUserIdByMappingToken(mappingToken);
+      LOG.debug("Looking up userId for acessToken '" + accessToken + "'.");
+      derpId = accountLinkingDAO.getUserIdByAuthToken(accessToken);
     }
     if(externalId == null){
       String error = "Missing required parameter 'externalId'";
