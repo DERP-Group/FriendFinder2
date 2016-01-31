@@ -11,6 +11,7 @@ var state;
 var accessToken;
 var transparentRegistrationRequest;
 var mappingTokenRequest;
+var twitchRedirectUrl = "https://api.twitch.tv/kraken/oauth2/authorize?response_type=code&client_id=31yn7mmsohzw3pyrvere5biycw4wbv9&redirect_uri=http%3A%2F%2Ftwitch.oauth.derpgroup.com%3A9080%2Flivefinder%2Fauth%2Ftwitch&scope=user_read&state=";
 
 function init(){
 	//Grab token from query params
@@ -34,7 +35,7 @@ function init(){
 
 function redeemMappingTokenSuccess(response){
 	mappingTokenResponse = response;
-	accessToken = mappingTokenRequest.request.getResponseHeader('Access-Token');
+	setAccessToken(mappingTokenRequest.request.getResponseHeader('Access-Token'));
 	populateForm(response);
 } 
 
@@ -99,7 +100,7 @@ function transparentRegistration(){
 function transparentRegistrationSuccess(response){
 	populateForm(response);
 	qwery('#registrationSubmitButton')[0].style.display = 'block';
-	accessToken = transparentRegistrationRequest.request.getResponseHeader('Access-Token');
+	setAccessToken(transparentRegistrationRequest.request.getResponseHeader('Access-Token'));
 } 
 
 function transparentRegistrationFailure(error, message){
@@ -120,11 +121,9 @@ function submitRegistration(){
 	console.log('url: ' + url);
 	qwery('#accountLinkingForm')[0].action = url;
 	qwery('#accountLinkingForm')[0].submit();
-	/*reqwest({
-	    url: url
-	    , method: 'get'
-	    , type: 'json'
-	    , contentType: 'application/json'
-	}).then(linkSteamIdSuccess, linkSteamIdFailure)
-	.always(displayNotificationDiv);*/
+}
+
+function setAccessToken(inputToken){
+	accessToken = inputToken;
+	qwery('#twitchAuthLink')[0].href = twitchRedirectUrl + inputToken;
 }

@@ -29,4 +29,10 @@ public class TwitchUser {
   public void setRefreshToken(String refreshToken) {
     this.refreshToken = refreshToken;
   }
+
+  @Override
+  public String toString() {
+    return "TwitchUser [name=" + name + ", authToken=" + authToken
+        + ", refreshToken=" + refreshToken + "]";
+  }
 }

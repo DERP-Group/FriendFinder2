@@ -41,8 +41,11 @@ import org.slf4j.LoggerFactory;
 
 import com.derpgroup.livefinder.configuration.MainConfig;
 import com.derpgroup.livefinder.dao.AccountLinkingDAO;
+import com.derpgroup.livefinder.manager.TwitchClient;
+import com.derpgroup.livefinder.manager.TwitchTokenResponse;
 import com.derpgroup.livefinder.model.accountlinking.AccountLinkingUser;
-import com.derpgroup.livefinder.model.accountlinking.LandingPageErrorResponse;
+import com.derpgroup.livefinder.model.accountlinking.AuthenticationException;
+import com.derpgroup.livefinder.model.accountlinking.TwitchUser;
 
 /**
  * REST APIs for requests generating from authentication flows
@@ -62,6 +65,7 @@ public class AuthResource {
   private String steamSuccessPagePath;
   private String steamErrorPagePath;
   private String alexaRedirectPath;
+  private TwitchClient twitchClient;
   
   
   public AuthResource(MainConfig config, Environment env, AccountLinkingDAO accountLinkingDAO) {
@@ -72,27 +76,23 @@ public class AuthResource {
     steamErrorPagePath = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getErrorPagePath();
     
     alexaRedirectPath = config.getLiveFinderConfig().getAlexaAccountLinkingConfig().getAlexaRedirectPath();
-  }
-  
-  @GET
-  @Path("/twitch")
-  @Produces(MediaType.TEXT_PLAIN)
-  public String doTwitchAuth(){
-    return "Hello!";
+    
+    twitchClient = new TwitchClient("https://api.twitch.tv/kraken/oauth2","31yn7mmsohzw3pyrvere5biycw4wbv9"
+        ,"siile5navsqcwy0s7fozlrrjn0hokpk","http://twitch.oauth.derpgroup.com:9080/livefinder/auth/twitch");
   }
   
   @GET
   @Path("/mappingToken")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getUserByMappingToken(@QueryParam("token") String mappingToken){
-    if(StringUtils.isEmpty(mappingToken)){
-      LOG.error("No valid mapping token was provided.");
-      throw new WebApplicationException("No valid mapping token was provided.",Response.Status.UNAUTHORIZED);
+  public Response authenticateUserBySessionToken(@QueryParam("token") String sessionToken){
+    if(StringUtils.isEmpty(sessionToken)){
+      LOG.error("No valid session token was provided.");
+      throw new WebApplicationException("No valid session token was provided.",Response.Status.UNAUTHORIZED);
       //TODO: Make this not throw html errors
     }
     
-    LOG.debug("Looking up userId for mappingToken '" + mappingToken + "'.");
-    String userId = accountLinkingDAO.getUserIdByMappingToken(mappingToken);
+    LOG.debug("Looking up userId for token '" + sessionToken + "'.");
+    String userId = accountLinkingDAO.getUserIdByMappingToken(sessionToken);
     
     if(StringUtils.isEmpty(userId)){
       LOG.error("No valid user details were associated with the token provided.");
@@ -117,51 +117,65 @@ public class AuthResource {
   @Produces(MediaType.APPLICATION_JSON)
   public Object doSteamLinking(@QueryParam("accessToken") String accessToken, @QueryParam("externalId") String externalId){
     //TODO: Refactor to be generic?
+    //TODO: Move accessToken logic into a filter
     
-    String derpId;
-    if(accessToken == null){
-      String error = "Missing required parameter 'accessToken'";
-      return Response.status(Response.Status.BAD_REQUEST).entity(new LandingPageErrorResponse(this, error)).build();
-//      return new LandingPageErrorResponse(this, error);
-//      return buildRedirect(steamErrorPagePath,steamLinkingFlowHostname,error);
-    }else{
-      LOG.debug("Looking up userId for acessToken '" + accessToken + "'.");
-      derpId = accountLinkingDAO.getUserIdByAuthToken(accessToken);
+    AccountLinkingUser user;
+    try {
+      user = validateAccessToken(accessToken);
+    } catch (AuthenticationException e) {
+      return Response.status(Response.Status.BAD_REQUEST).entity(e).build();
     }
+
     if(externalId == null){
       String error = "Missing required parameter 'externalId'";
-      return Response.status(Response.Status.BAD_REQUEST).entity(new LandingPageErrorResponse(this, error)).build();
-//      return new LandingPageErrorResponse(this, error);
-//      return buildRedirect(steamErrorPagePath,steamLinkingFlowHostname,error);
-    }
-    if(derpId == null){
-      String error = "Token could not be resolved to a known user.";
-      return Response.status(Response.Status.BAD_REQUEST).entity(new LandingPageErrorResponse(this, error)).build();
-//      return new LandingPageErrorResponse(this, error);
-//      return buildRedirect(steamErrorPagePath,steamLinkingFlowHostname,error);
-    }
-    
-    LOG.debug("Looking up user for userId '" + derpId + "'.");
-    AccountLinkingUser user = accountLinkingDAO.getUserByUserId(derpId);
-    if(user == null){
-      String error = "Couldn't find user with derpId '" + derpId + "'.";
-      return Response.status(Response.Status.BAD_REQUEST).entity(new LandingPageErrorResponse(this, error)).build();
-//      return new LandingPageErrorResponse(this, error);
-//      return buildRedirect(steamErrorPagePath,steamLinkingFlowHostname,error);
+      return Response.status(Response.Status.BAD_REQUEST).entity(new AuthenticationException(error)).build();
     }
     
     if(user.getSteamId() == null){
-      LOG.info("User '" + derpId + "' has no steamId; setting for the first time to '" + externalId + "'.");
+      LOG.info("User '" + user.getUserId() + "' has no steamId; setting for the first time to '" + externalId + "'.");
     }else{
-      LOG.info("User '" + derpId + "' had steamId '" + user.getSteamId() + "'; updating to '" + externalId + "'.");
+      LOG.info("User '" + user.getUserId() + "' had steamId '" + user.getSteamId() + "'; updating to '" + externalId + "'.");
     }
     user.setSteamId(externalId);
     
     accountLinkingDAO.updateUser(user);
 
-    /*return buildRedirect(steamSuccessPagePath,null);*/
-//    return Response.ok("{\"response\":\"Successfully linked account!\"}").build();
     return user;
+  }
+  
+  @GET
+  @Path("/twitch")
+  @Produces(MediaType.TEXT_PLAIN)
+  public Response doTwitchAuth(@QueryParam("code") String code,@QueryParam("state") String state){
+    
+    AccountLinkingUser user;
+    try {
+      user = validateAccessToken(state);
+    } catch (AuthenticationException e) {
+      return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+    }
+
+    if(StringUtils.isEmpty(code)){
+      String error = "Missing required parameter 'code'";
+      return Response.status(Response.Status.BAD_REQUEST).entity(error).build();
+    }
+    
+    LOG.info("Requesting access token for user '" + user.getUserId() + "'.");
+    TwitchTokenResponse tokenResponse;
+    try {
+      tokenResponse = twitchClient.redeemCode(code);
+    } catch (AuthenticationException e) {
+      return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+    }
+    
+    TwitchUser twitchUser = new TwitchUser();
+    twitchUser.setAuthToken(tokenResponse.getAccessToken());
+    twitchUser.setRefreshToken(tokenResponse.getRefreshToken());
+    user.setTwitchUser(twitchUser);
+    
+    accountLinkingDAO.updateUser(user);    
+    
+    return Response.ok("Hello! \n Code: " + code + "\n UserId: " + user.toString()).build();
   }
 
   @GET
@@ -174,20 +188,33 @@ public class AuthResource {
     accountLinkingDAO.updateUser(user);
     
     String accessToken = accountLinkingDAO.generateAuthToken(user.getUserId());
-
-    /*
     
-    URIBuilder uriBuilder;
-    try {
-      uriBuilder = new URIBuilder(alexaRedirectPath);
-    } catch (URISyntaxException e) {
-      throw new WebApplicationException("Error");
-    }
-    uriBuilder.setFragment(urlFragment.toString());
-    LOG.info("Redirect URI: " + uriBuilder.toString());*/
-//    LOG.info("Access Token: " + accessToken);
-//    return buildRedirect(alexaRedirectPath,null,null,urlFragment.toString());
     return Response.ok(user).header("Access-Token", accessToken).build();
+  }
+  
+  public AccountLinkingUser validateAccessToken(String accessToken) throws AuthenticationException{
+
+    String userId = null;
+    if(accessToken == null){
+      String error = "Missing required parameter 'accessToken'";
+      throw new AuthenticationException(error);
+    }else{
+      LOG.debug("Looking up userId for acessToken '" + accessToken + "'.");
+      userId = accountLinkingDAO.getUserIdByAuthToken(accessToken);
+    }
+    if(userId == null){
+      String error = "Token could not be resolved to a known user.";
+      throw new AuthenticationException(error);
+    }
+    
+    LOG.debug("Looking up user for userId '" + userId + "'.");
+    AccountLinkingUser user = accountLinkingDAO.getUserByUserId(userId);
+    if(user == null){
+      String error = "Couldn't find user with userId '" + userId + "'.";
+      throw new AuthenticationException(error);
+    }
+    
+    return user;
   }
   
   public Response buildRedirect(String path, String reason){

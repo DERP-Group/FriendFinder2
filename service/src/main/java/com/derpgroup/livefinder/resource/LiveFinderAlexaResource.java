@@ -45,6 +45,7 @@ import com.amazon.speech.json.SpeechletRequestEnvelope;
 import com.amazon.speech.json.SpeechletResponseEnvelope;
 import com.amazon.speech.speechlet.SpeechletResponse;
 import com.amazon.speech.ui.Card;
+import com.amazon.speech.ui.LinkAccountCard;
 import com.amazon.speech.ui.OutputSpeech;
 import com.amazon.speech.ui.Reprompt;
 import com.amazon.speech.ui.SimpleCard;
@@ -116,10 +117,6 @@ public class LiveFinderAlexaResource {
       if (request.getRequest() == null) {
         throw new DerpwizardException(DerpwizardExceptionReasons.MISSING_INFO.getSsml(),"Missing request body.");
       }
-      if(testFlag == null || !testFlag){ 
-        //Figure out whether this is needed with Lambda bounce
-        //AlexaUtils.validateAlexaRequest(request, signatureCertChainUrl, signature);
-      }
   
       Map<String, Object> sessionAttributes = request.getSession().getAttributes();
       
@@ -137,17 +134,19 @@ public class LiveFinderAlexaResource {
         LOG.error(message);
         throw new DerpwizardException(message);
       }else if(StringUtils.isEmpty(accessToken)){
-        throw new DerpwizardException("Unauthorized user - please complete account linking."); //Do account linking prompt here
+        return doAccountLinking(new LiveFinderMetadata(), "Unauthorized user - please complete account linking via the Alexa app on your mobile device or browser."); //Do account linking prompt here
       }else if(StringUtils.isEmpty(accountLinkingDAO.getUserIdByAuthToken(accessToken))){
-        throw new DerpwizardException("Token was unknown or had no associated userId - please complete account linking."); //Do account linking prompt here
+        return doAccountLinking(new LiveFinderMetadata(), "Token was unrecognized or had no associated user - please complete account linking via the Alexa app on your mobile device or browser."); //Do account linking prompt here
       }else{
         userId = accountLinkingDAO.getUserIdByAuthToken(accessToken);
+        LOG.info("Found userId '" + userId + "' for access token '" + accessToken + "'.");
       }
       sessionAttributes.put("userId", userId);
       
-      mapper.registerModule(new MixInModule());
       CommonMetadata inputMetadata = mapper.convertValue(sessionAttributes, new TypeReference<LiveFinderMetadata>(){});
       outputMetadata = mapper.convertValue(sessionAttributes, new TypeReference<LiveFinderMetadata>(){});
+      
+      mapper.registerModule(new MixInModule());
 
       // Build the ServiceOutput object, which gets updated within the service itself
       ServiceOutput serviceOutput = new ServiceOutput();
@@ -159,7 +158,7 @@ public class LiveFinderAlexaResource {
       try{
         manager.handleRequest(voiceInput, serviceOutput);
       }catch(AccountLinkingNotLinkedException e){
-        return doAccountLinking(e.getInterfaceName(), outputMetadata, userId);
+        return doAccountUpdateSession(e.getInterfaceName(), outputMetadata, userId);
       }
       
       SimpleCard card;
@@ -208,11 +207,24 @@ public class LiveFinderAlexaResource {
     }
   }
 
-  private SpeechletResponseEnvelope doAccountLinking(InterfaceName interfaceName, LiveFinderMetadata outputMetadata, String userId) throws DerpwizardException {
+  private SpeechletResponseEnvelope doAccountLinking(LiveFinderMetadata outputMetadata, String message) throws DerpwizardException {
+   
+    String cardTitle = "Please complete account linking.";
+    
+    SsmlOutputSpeech outputSpeech = new SsmlOutputSpeech();
+    outputSpeech.setSsml(new SsmlDocumentBuilder().text(message).build().getSsml());
+    
+    LinkAccountCard card = new LinkAccountCard();
+    card.setTitle(cardTitle);
+    
+    return buildOutput(outputSpeech, card, null, true, outputMetadata);
+  }
+
+  private SpeechletResponseEnvelope doAccountUpdateSession(InterfaceName interfaceName, LiveFinderMetadata outputMetadata, String userId) throws DerpwizardException {
 
     //If this is the approach for linking to the third parties, it should be made generic and added to a manager
     //If the approach ends up being to use LinkAccount cards, however, then that is implementation specific, and can't be made generic
-    String output = "Could not find a linked " + interfaceName.name() + " account.  To link one, please follow the account linking instructions in the Alexa app on your phone, tablet, or browser.";
+    String output = "Could not find a linked " + interfaceName.name() + " account.<break />  To link one, please follow the account linking instructions in the Alexa app on your phone, tablet, or browser.";
     URI linkingUri;
     try {
       linkingUri = new URIBuilder().setScheme(linkingFlowProtocol).setHost(linkingFlowHostname).setPath(landingPagePath)

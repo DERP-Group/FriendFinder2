@@ -140,28 +140,21 @@ public class LiveFinderManager extends AbstractManager {
     case "steam":
       findSteamFriends(voiceInput, serviceOutput);
       break;
+    case "twitch":
+      findTwitchStreams(voiceInput,serviceOutput);
+      break;
       default:
         String message = "Unknown service '" + service + "'.";
         LOG.warn(message);
         throw new DerpwizardException(new SsmlDocumentBuilder().text(message).build().getSsml(), message, message);
     }
   }
-  
+
   private void findSteamFriends(VoiceInput voiceInput, ServiceOutput serviceOutput) throws DerpwizardException{
     steamClient = steamClientWrapper.getClient();
     
-    String userId = ((LiveFinderMetadata)voiceInput.getMetadata()).getUserId();
+    AccountLinkingUser user = getUser(voiceInput, InterfaceName.STEAM);
     
-    if(StringUtils.isEmpty(userId)){
-      String message = "Missing userId.";
-      LOG.error(message);
-      throw new DerpwizardException(message);
-    }
-    
-    AccountLinkingUser user = accountLinkingDAO.getUserByUserId(userId);
-    if(user == null || StringUtils.isEmpty(user.getSteamId())){
-      throw new AccountLinkingNotLinkedException(InterfaceName.STEAM);
-    }
     List<String> friends = getListOfFriendIdsByUserId(user.getSteamId());
     
     GetPlayerSummaries playerSummaries;
@@ -217,6 +210,29 @@ public class LiveFinderManager extends AbstractManager {
       throw new DerpwizardException(new SsmlDocumentBuilder().text(message).build().getSsml(), message, "Unknown Steam exception.");
     }
     return friends;
+  }
+  
+  private void findTwitchStreams(VoiceInput voiceInput, ServiceOutput serviceOutput) throws DerpwizardException {
+    AccountLinkingUser user = getUser(voiceInput, InterfaceName.TWITCH);
+    
+    StringBuilder sb = new StringBuilder();
+    sb.append("User: " + user.toString());
+  }
+
+  public AccountLinkingUser getUser(VoiceInput voiceInput, InterfaceName interfaceName) throws DerpwizardException {
+    String userId = ((LiveFinderMetadata)voiceInput.getMetadata()).getUserId();
+    
+    if(StringUtils.isEmpty(userId)){
+      String message = "Missing userId.";
+      LOG.error(message);
+      throw new DerpwizardException(message);
+    }
+    
+    AccountLinkingUser user = accountLinkingDAO.getUserByUserId(userId);
+    if(user == null || StringUtils.isEmpty(user.getSteamId())){
+      throw new AccountLinkingNotLinkedException(interfaceName);
+    }
+    return user;
   }
 
 }
