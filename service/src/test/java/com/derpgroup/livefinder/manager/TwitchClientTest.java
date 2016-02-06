@@ -59,6 +59,7 @@ public class TwitchClientTest {
       assertNotNull(stream.getChannel());
       assertNotNull(stream.getChannel().getId());
       assertNotNull(stream.getChannel().getDisplayName());
+      assertNotNull(stream.getChannel().getUrl());
     }
     
     System.out.println(followedStreamsResponse.toString());

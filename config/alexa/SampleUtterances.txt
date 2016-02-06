@@ -1,0 +1,8 @@
+FIND_BY_SERVICE find my friends on {service}
+FIND_BY_SERVICE find my streams on {service}
+FIND_BY_SERVICE if I have any friends on {service}
+FIND_BY_SERVICE if I have any live streams on {service}
+FIND_BY_SERVICE which of my friends are on {service}
+FIND_BY_SERVICE which of my streams are live on {service}
+FIND_BY_SERVICE which of my {service} friends are online
+FIND_BY_SERVICE which of my {service} streams are live

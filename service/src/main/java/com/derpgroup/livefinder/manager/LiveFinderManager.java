@@ -240,7 +240,7 @@ public class LiveFinderManager extends AbstractManager {
     StringBuilder visualText = new StringBuilder();
     visualText.append("Current live streams:");
     StringBuilder voiceOutput = new StringBuilder();
-    voiceOutput.append("Current live streams. <break time=\"500ms\" />");
+    voiceOutput.append("Current <phoneme alphabet=\"ipa\" ph=\"laɪv\">live</phoneme> streams. <break time=\"500ms\" />");
     for(TwitchStream stream : response.getStreams()){
       if(stream.getChannel() == null || stream.getChannel().getDisplayName() == null){
         LOG.warn("No valid channel object for stream '" + stream.getId() + "'.");
@@ -256,7 +256,7 @@ public class LiveFinderManager extends AbstractManager {
       visualText.append("\n\n");
       visualText.append(stream.getChannel().getDisplayName());
       visualText.append("\n");
-      visualText.append(stream.getLinks().getSelf());
+      visualText.append(stream.getChannel().getUrl());
     }
     
     serviceOutput.getVoiceOutput().setSsmltext(voiceOutput.toString());
