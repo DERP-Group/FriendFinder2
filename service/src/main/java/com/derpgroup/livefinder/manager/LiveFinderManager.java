@@ -20,9 +20,11 @@ import com.derpgroup.livefinder.LiveFinderMetadata;
 import com.derpgroup.livefinder.MixInModule;
 import com.derpgroup.livefinder.dao.AccountLinkingDAO;
 import com.derpgroup.livefinder.model.SteamClientWrapper;
+import com.derpgroup.livefinder.model.TwitchClientWrapper;
 import com.derpgroup.livefinder.model.UserData;
 import com.derpgroup.livefinder.model.accountlinking.AccountLinkingNotLinkedException;
 import com.derpgroup.livefinder.model.accountlinking.AccountLinkingUser;
+import com.derpgroup.livefinder.model.accountlinking.AuthenticationException;
 import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
 import com.lukaspradel.steamapi.core.exception.SteamApiException;
 import com.lukaspradel.steamapi.data.json.friendslist.Friend;
@@ -41,12 +43,14 @@ public class LiveFinderManager extends AbstractManager {
 
   private SteamWebApiClient steamClient;
   private static SteamClientWrapper steamClientWrapper;
+  private static TwitchClient twitchClient;
   private Map<Integer, String> steamStateValues;
   
   private AccountLinkingDAO accountLinkingDAO;
 
   static {
     steamClientWrapper = SteamClientWrapper.getInstance();
+    twitchClient = TwitchClientWrapper.getInstance().getClient();
   }
 
   static {
@@ -215,8 +219,49 @@ public class LiveFinderManager extends AbstractManager {
   private void findTwitchStreams(VoiceInput voiceInput, ServiceOutput serviceOutput) throws DerpwizardException {
     AccountLinkingUser user = getUser(voiceInput, InterfaceName.TWITCH);
     
-    StringBuilder sb = new StringBuilder();
-    sb.append("User: " + user.toString());
+    TwitchFollowedStreamsResponse response = null;
+    try {
+      response = twitchClient.getFollowedStreams(user.getTwitchUser().getAuthToken());
+    } catch (AuthenticationException e) {
+      String message = "Unknown Twitch exception '" + e.getMessage() + "'.";
+      LOG.warn(message);
+      throw new DerpwizardException(new SsmlDocumentBuilder().text(message).build().getSsml(), message, message);
+    }
+    if(response == null){
+      String message = "Twitch did not return a valid list of streams.";
+      LOG.warn(message);
+      throw new DerpwizardException(new SsmlDocumentBuilder().text(message).build().getSsml(), message, message);
+    }else if(response.getStreams() == null || response.getStreams().length < 1){
+      String message = "None of the streams you follow are currently live.";
+      LOG.warn(message);
+      throw new DerpwizardException(new SsmlDocumentBuilder().text(message).build().getSsml(), message, message);
+    }
+    
+    StringBuilder visualText = new StringBuilder();
+    visualText.append("Current live streams:");
+    StringBuilder voiceOutput = new StringBuilder();
+    voiceOutput.append("Current live streams. <break time=\"500ms\" />");
+    for(TwitchStream stream : response.getStreams()){
+      if(stream.getChannel() == null || stream.getChannel().getDisplayName() == null){
+        LOG.warn("No valid channel object for stream '" + stream.getId() + "'.");
+        continue;
+      }
+      if(stream.getLinks() == null || stream.getLinks().getSelf() == null){
+        LOG.warn("No valid self link object for stream '" + stream.getId() + "'.");
+        continue;
+      }
+      
+      voiceOutput.append("<break time=\"500ms\" />");
+      voiceOutput.append(stream.getChannel().getDisplayName());
+      visualText.append("\n\n");
+      visualText.append(stream.getChannel().getDisplayName());
+      visualText.append("\n");
+      visualText.append(stream.getLinks().getSelf());
+    }
+    
+    serviceOutput.getVoiceOutput().setSsmltext(voiceOutput.toString());
+    serviceOutput.getVisualOutput().setText(visualText.toString());
+    serviceOutput.getVisualOutput().setTitle("Active Twitch Streams");
   }
 
   public AccountLinkingUser getUser(VoiceInput voiceInput, InterfaceName interfaceName) throws DerpwizardException {
@@ -229,7 +274,13 @@ public class LiveFinderManager extends AbstractManager {
     }
     
     AccountLinkingUser user = accountLinkingDAO.getUserByUserId(userId);
-    if(user == null || StringUtils.isEmpty(user.getSteamId())){
+    if(user == null){
+      throw new AccountLinkingNotLinkedException(interfaceName);
+    }
+    if(interfaceName == InterfaceName.STEAM && StringUtils.isEmpty(user.getSteamId())){
+      throw new AccountLinkingNotLinkedException(interfaceName);
+    }
+    if(interfaceName == InterfaceName.TWITCH && user.getTwitchUser() == null){
       throw new AccountLinkingNotLinkedException(interfaceName);
     }
     return user;

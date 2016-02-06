@@ -8,6 +8,11 @@
       "errorPagePath":"/steamredirecterror.html",
       "landingPagePath":"/livefinder/accountLinking/index.html"
     },
+    "twitchAccountLinkingConfig":{
+      "twitchApiRootUri":"https://api.twitch.tv/kraken",
+      "clientId":"31yn7mmsohzw3pyrvere5biycw4wbv9",
+      "redirectUri":"http://twitch.oauth.derpgroup.com:9080/livefinder/auth/twitch"
+    },
     "alexaAccountLinkingConfig":{
       "alexaRedirectPath":"/authGrantRedirect.html"
     }

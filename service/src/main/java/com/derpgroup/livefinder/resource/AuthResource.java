@@ -43,6 +43,8 @@ import com.derpgroup.livefinder.configuration.MainConfig;
 import com.derpgroup.livefinder.dao.AccountLinkingDAO;
 import com.derpgroup.livefinder.manager.TwitchClient;
 import com.derpgroup.livefinder.manager.TwitchTokenResponse;
+import com.derpgroup.livefinder.manager.TwitchUserResponse;
+import com.derpgroup.livefinder.model.TwitchClientWrapper;
 import com.derpgroup.livefinder.model.accountlinking.AccountLinkingUser;
 import com.derpgroup.livefinder.model.accountlinking.AuthenticationException;
 import com.derpgroup.livefinder.model.accountlinking.TwitchUser;
@@ -77,8 +79,7 @@ public class AuthResource {
     
     alexaRedirectPath = config.getLiveFinderConfig().getAlexaAccountLinkingConfig().getAlexaRedirectPath();
     
-    twitchClient = new TwitchClient("https://api.twitch.tv/kraken/oauth2","31yn7mmsohzw3pyrvere5biycw4wbv9"
-        ,"siile5navsqcwy0s7fozlrrjn0hokpk","http://twitch.oauth.derpgroup.com:9080/livefinder/auth/twitch");
+    twitchClient = TwitchClientWrapper.getInstance().getClient();
   }
   
   @GET
@@ -152,18 +153,29 @@ public class AuthResource {
     try {
       user = validateAccessToken(state);
     } catch (AuthenticationException e) {
+      LOG.error("Could not validate access token.");
       return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
     }
 
     if(StringUtils.isEmpty(code)){
       String error = "Missing required parameter 'code'";
+      LOG.error(error);
       return Response.status(Response.Status.BAD_REQUEST).entity(error).build();
     }
     
-    LOG.info("Requesting access token for user '" + user.getUserId() + "'.");
+    LOG.info("Requesting access token for user '" + user.getUserId() + "' with code '" + code + "'.");
     TwitchTokenResponse tokenResponse;
     try {
       tokenResponse = twitchClient.redeemCode(code);
+    } catch (AuthenticationException e) {
+      LOG.error("Could not redeem code for access token.");
+      return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+    }
+    
+    LOG.info("Requesting twitch user info for user '" + user.getUserId() + "'.");
+    TwitchUserResponse userResponse;
+    try {
+      userResponse = twitchClient.getUser(tokenResponse.getAccessToken());
     } catch (AuthenticationException e) {
       return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
     }
@@ -171,9 +183,10 @@ public class AuthResource {
     TwitchUser twitchUser = new TwitchUser();
     twitchUser.setAuthToken(tokenResponse.getAccessToken());
     twitchUser.setRefreshToken(tokenResponse.getRefreshToken());
+    twitchUser.setName(userResponse.getDisplayName());
     user.setTwitchUser(twitchUser);
     
-    accountLinkingDAO.updateUser(user);    
+    accountLinkingDAO.updateUser(user);
     
     return Response.ok("Hello! \n Code: " + code + "\n UserId: " + user.toString()).build();
   }

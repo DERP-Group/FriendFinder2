@@ -11,6 +11,8 @@ public class LiveFinderConfig {
   @NotNull
   private AlexaAccountLinkingConfig alexaAccountLinkingConfig;
   @NotNull
+  private TwitchAccountLinkingConfig twitchAccountLinkingConfig;
+  @NotNull
   private String apiKey;
 
   @JsonProperty
@@ -43,5 +45,16 @@ public class LiveFinderConfig {
   public void setAlexaAccountLinkingConfig(
       AlexaAccountLinkingConfig alexaAccountLinkingConfig) {
     this.alexaAccountLinkingConfig = alexaAccountLinkingConfig;
+  }
+
+  @JsonProperty
+  public TwitchAccountLinkingConfig getTwitchAccountLinkingConfig() {
+    return twitchAccountLinkingConfig;
+  }
+
+  @JsonProperty
+  public void setTwitchAccountLinkingConfig(
+      TwitchAccountLinkingConfig twitchAccountLinkingConfig) {
+    this.twitchAccountLinkingConfig = twitchAccountLinkingConfig;
   }
 }

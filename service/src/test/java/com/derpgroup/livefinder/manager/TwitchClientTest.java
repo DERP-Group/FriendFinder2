@@ -14,20 +14,53 @@ public class TwitchClientTest {
   
   @Before
   public void setup(){
-    twitchClient = new TwitchClient("https://api.twitch.tv/kraken/oauth2","31yn7mmsohzw3pyrvere5biycw4wbv9"
-        ,"siile5navsqcwy0s7fozlrrjn0hokpk","http://twitch.oauth.derpgroup.com:9080/livefinder/auth/twitch");
+    twitchClient = new TwitchClient("https://api.twitch.tv/kraken","31yn7mmsohzw3pyrvere5biycw4wbv9"
+        ,"fake","http://twitch.oauth.derpgroup.com:9080/livefinder/auth/twitch");
   }
-  
   
   //Test exists for purpose of working with the real Twitch API - ignoring to not trigger at build time 
   @Test
   @Ignore
   public void testRedeemCode() throws AuthenticationException{
-    TwitchTokenResponse tokenResponse = twitchClient.redeemCode("xvb4ncj0f74rma5mnbycnjzv5dllg5");
+    TwitchTokenResponse tokenResponse = twitchClient.redeemCode("q1zdzfb06qjc5ub0nmxkwfgz8nohuy");
     assertNotNull(tokenResponse);
     assertNotNull(tokenResponse.getAccessToken());
     assertNotNull(tokenResponse.getRefreshToken());
     
     System.out.println(tokenResponse.toString());
+  }
+  
+  //Test exists for purpose of working with the real Twitch API - ignoring to not trigger at build time 
+  @Test
+  @Ignore
+  public void testGetUser() throws AuthenticationException{
+    TwitchUserResponse userResponse = twitchClient.getUser("gbpkdf3qpw5vfdvx69mbzdaqeajrna");
+
+    assertNotNull(userResponse);
+    assertNotNull(userResponse.getId());
+    
+    System.out.println(userResponse.toString());
+  }
+  
+  //Test exists for purpose of working with the real Twitch API - ignoring to not trigger at build time 
+  @Test
+  @Ignore
+  public void testGetFollowedStreams() throws AuthenticationException{
+    TwitchFollowedStreamsResponse followedStreamsResponse = twitchClient.getFollowedStreams("gbpkdf3qpw5vfdvx69mbzdaqeajrna");
+
+    assertNotNull(followedStreamsResponse);
+    assertNotNull(followedStreamsResponse.getStreams());
+    assertNotNull(followedStreamsResponse.getStreams());
+    
+    for(TwitchStream stream : followedStreamsResponse.getStreams()){
+      assertNotNull(stream.getId());
+      assertNotNull(stream.getLinks());
+      assertNotNull(stream.getLinks().getSelf());
+      assertNotNull(stream.getChannel());
+      assertNotNull(stream.getChannel().getId());
+      assertNotNull(stream.getChannel().getDisplayName());
+    }
+    
+    System.out.println(followedStreamsResponse.toString());
   }
 }

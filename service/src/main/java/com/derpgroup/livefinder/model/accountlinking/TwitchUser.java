@@ -5,6 +5,7 @@ public class TwitchUser {
   private String name;
   private String authToken;
   private String refreshToken;
+  private String id;
   
   public String getName() {
     return name;
@@ -30,9 +31,17 @@ public class TwitchUser {
     this.refreshToken = refreshToken;
   }
 
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
+  }
+
   @Override
   public String toString() {
     return "TwitchUser [name=" + name + ", authToken=" + authToken
-        + ", refreshToken=" + refreshToken + "]";
+        + ", refreshToken=" + refreshToken + ", id=" + id + "]";
   }
 }

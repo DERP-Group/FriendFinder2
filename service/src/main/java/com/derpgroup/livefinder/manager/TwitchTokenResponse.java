@@ -1,7 +1,5 @@
 package com.derpgroup.livefinder.manager;
 
-import java.util.Arrays;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class TwitchTokenResponse {

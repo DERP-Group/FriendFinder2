@@ -28,10 +28,12 @@ import io.dropwizard.setup.Environment;
 import java.io.IOException;
 
 import com.derpgroup.livefinder.configuration.MainConfig;
+import com.derpgroup.livefinder.configuration.TwitchAccountLinkingConfig;
 import com.derpgroup.livefinder.dao.AccountLinkingDAO;
 import com.derpgroup.livefinder.dao.impl.InMemoryAccountLinkingDAO;
 import com.derpgroup.livefinder.health.BasicHealthCheck;
 import com.derpgroup.livefinder.model.SteamClientWrapper;
+import com.derpgroup.livefinder.model.TwitchClientWrapper;
 import com.derpgroup.livefinder.resource.AuthResource;
 import com.derpgroup.livefinder.resource.LiveFinderAlexaResource;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -68,11 +70,17 @@ public class App extends Application<MainConfig> {
     // DAO
     AccountLinkingDAO accountLinkingDAO = new InMemoryAccountLinkingDAO();
     
+    SteamClientWrapper wrapper = SteamClientWrapper.getInstance();
+    wrapper.init(config.getLiveFinderConfig().getApiKey());
+    TwitchClientWrapper twitchWrapper = TwitchClientWrapper.getInstance();
+    TwitchAccountLinkingConfig twitchConfig = config.getLiveFinderConfig().getTwitchAccountLinkingConfig();
+    twitchWrapper.init(twitchConfig.getTwitchApiRootUri()
+        ,twitchConfig.getClientId()
+        ,twitchConfig.getClientSecret()
+        ,twitchConfig.getRedirectUri());
+    
     // Resources
     environment.jersey().register(new LiveFinderAlexaResource(config, environment, accountLinkingDAO));
     environment.jersey().register(new AuthResource(config, environment,accountLinkingDAO));
-    
-    SteamClientWrapper wrapper = SteamClientWrapper.getInstance();
-    wrapper.init(config.getLiveFinderConfig().getApiKey());
   }
 }
