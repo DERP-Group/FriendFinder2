@@ -53,13 +53,36 @@ public class H2EmbeddedAccountLinkingDAOTest {
     assertNotNull(createdUser.getUserId());
     assertNotNull(createdUser.getDateCreated());
     assertEquals(createdUser.getUserId(),user.getUserId());
-    
+  }
+  
+  @Test
+  public void testRetrieveUserById(){
+    UserAccount user = new UserAccount();
+    user.setUserId("asdf");
+    dao.updateUser(user);
 
-    UserAccount retrievedUser =  dao.getUserByUserId("asdf");
+    UserAccount retrievedUser =  dao.getUserByUserId(user.getUserId());
     assertNotNull(retrievedUser);
     assertNotNull(retrievedUser.getUserId());
     assertNotNull(retrievedUser.getDateCreated());
     assertEquals(retrievedUser.getUserId(),user.getUserId());
+  }
+  
+  @Test
+  public void testCreateLinkingToken(){
+    String userId = "asdf";
+    String responseToken = dao.generateMappingTokenForUserId(userId);
+    assertNotNull(responseToken);
+    assertEquals(36,responseToken.length());
+  }
+  
+  @Test
+  public void testRetrieveLinkingToken(){
+    String userId = "asdf";
+    String responseToken = dao.generateMappingTokenForUserId(userId);
+    String userIdRetrieved = dao.getUserIdByMappingToken(responseToken);
+    assertNotNull(userIdRetrieved);
+    assertEquals(userIdRetrieved, userId);
   }
   
   @After

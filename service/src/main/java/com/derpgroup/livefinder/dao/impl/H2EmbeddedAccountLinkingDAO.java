@@ -134,13 +134,42 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
 
   @Override
   public String generateMappingTokenForUserId(String userId) {
-    
+
+    String linkingTokenCreate = "INSERT INTO LinkingToken(userId) VALUES('" + userId + "');";
+
+    try {
+      executeStatement(linkingTokenCreate);
+    } catch (SQLException e) {
+      e.printStackTrace();
+      return null;
+    }
+
+    ResultSet response;
+    String linkingTokenRetrieve = "SELECT TOP 1 * FROM LinkingToken WHERE userId = '" + userId + "';";
+       // + " ORDER BY dateCreated DESC";
+    try {
+      response = executeQuery(linkingTokenRetrieve);
+      response.first();
+      return response.getString("token");
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
     return null;
   }
 
   @Override
   public String getUserIdByMappingToken(String token) {
-    // TODO Auto-generated method stub
+
+    ResultSet response;
+    String linkingTokenRetrieve = "SELECT TOP 1 userId FROM LinkingToken WHERE token = '" + token + "'"
+        + " ORDER BY dateCreated DESC";
+    try {
+      response = executeQuery(linkingTokenRetrieve);
+      response.first();
+      return response.getString("userId");
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
     return null;
   }
 
