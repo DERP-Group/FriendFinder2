@@ -1,15 +1,17 @@
 package com.derpgroup.livefinder.dao.impl;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.derpgroup.livefinder.dao.AccountLinkingDAO;
-import com.derpgroup.livefinder.model.accountlinking.AccountLinkingUser;
-import com.derpgroup.livefinder.model.accountlinking.InterfaceMapping;
+import com.derpgroup.livefinder.model.accountlinking.UserAccount;
+import com.derpgroup.livefinder.model.accountlinking.ExternalAccountLink;
 import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
 import com.derpgroup.livefinder.model.accountlinking.TwitchUser;
 
@@ -17,12 +19,12 @@ public class InMemoryAccountLinkingDAO implements AccountLinkingDAO {
   
   private static final Logger LOG = LoggerFactory.getLogger(InMemoryAccountLinkingDAO.class);
 
-  Map<String,AccountLinkingUser> users;
+  Map<String,UserAccount> users;
   Map<String,String> mappingTokens;
   Map<String,String> grantedAuthTokens; //Map of token->derpUserId for tokens we have given out
   
   public InMemoryAccountLinkingDAO(){
-    users = new HashMap<String,AccountLinkingUser>();
+    users = new HashMap<String,UserAccount>();
     mappingTokens = new HashMap<String,String>();
     grantedAuthTokens = new HashMap<String,String>();
     
@@ -47,20 +49,20 @@ public class InMemoryAccountLinkingDAO implements AccountLinkingDAO {
     user2.setUserId("47e38fdf-d5ba-4491-9c3c-1f028d02483b");
     users.put("47e38fdf-d5ba-4491-9c3c-1f028d02483b", user2);*/
     
-    AccountLinkingUser user = new AccountLinkingUser();
+    UserAccount user = new UserAccount();
     user.setUserId("def456");
     users.put("def456", user);
     mappingTokens.put("abc123", "def456");
   }
   
   @Override
-  public AccountLinkingUser getUserByUserId(String userId) {
+  public UserAccount getUserByUserId(String userId) {
     LOG.info("Retrieving data for user '" + userId + "'.");
     return users.get(userId);
   }
 
   @Override
-  public AccountLinkingUser updateUser(AccountLinkingUser user) {
+  public UserAccount updateUser(UserAccount user) {
     LOG.info("Updating data for user '" + user.getUserId() + "'.");
     return users.put(user.getUserId(), user);
   }

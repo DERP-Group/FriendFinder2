@@ -23,7 +23,7 @@ import com.derpgroup.livefinder.model.SteamClientWrapper;
 import com.derpgroup.livefinder.model.TwitchClientWrapper;
 import com.derpgroup.livefinder.model.UserData;
 import com.derpgroup.livefinder.model.accountlinking.AccountLinkingNotLinkedException;
-import com.derpgroup.livefinder.model.accountlinking.AccountLinkingUser;
+import com.derpgroup.livefinder.model.accountlinking.UserAccount;
 import com.derpgroup.livefinder.model.accountlinking.AuthenticationException;
 import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
 import com.lukaspradel.steamapi.core.exception.SteamApiException;
@@ -157,7 +157,7 @@ public class LiveFinderManager extends AbstractManager {
   private void findSteamFriends(VoiceInput voiceInput, ServiceOutput serviceOutput) throws DerpwizardException{
     steamClient = steamClientWrapper.getClient();
     
-    AccountLinkingUser user = getUser(voiceInput, InterfaceName.STEAM);
+    UserAccount user = getUser(voiceInput, InterfaceName.STEAM);
     
     List<String> friends = getListOfFriendIdsByUserId(user.getSteamId());
     
@@ -217,7 +217,7 @@ public class LiveFinderManager extends AbstractManager {
   }
   
   private void findTwitchStreams(VoiceInput voiceInput, ServiceOutput serviceOutput) throws DerpwizardException {
-    AccountLinkingUser user = getUser(voiceInput, InterfaceName.TWITCH);
+    UserAccount user = getUser(voiceInput, InterfaceName.TWITCH);
     
     TwitchFollowedStreamsResponse response = null;
     try {
@@ -264,7 +264,7 @@ public class LiveFinderManager extends AbstractManager {
     serviceOutput.getVisualOutput().setTitle("Active Twitch Streams");
   }
 
-  public AccountLinkingUser getUser(VoiceInput voiceInput, InterfaceName interfaceName) throws DerpwizardException {
+  public UserAccount getUser(VoiceInput voiceInput, InterfaceName interfaceName) throws DerpwizardException {
     String userId = ((LiveFinderMetadata)voiceInput.getMetadata()).getUserId();
     
     if(StringUtils.isEmpty(userId)){
@@ -273,7 +273,7 @@ public class LiveFinderManager extends AbstractManager {
       throw new DerpwizardException(message);
     }
     
-    AccountLinkingUser user = accountLinkingDAO.getUserByUserId(userId);
+    UserAccount user = accountLinkingDAO.getUserByUserId(userId);
     if(user == null){
       throw new AccountLinkingNotLinkedException(interfaceName);
     }

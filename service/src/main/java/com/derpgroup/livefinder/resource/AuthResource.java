@@ -45,7 +45,7 @@ import com.derpgroup.livefinder.manager.TwitchClient;
 import com.derpgroup.livefinder.manager.TwitchTokenResponse;
 import com.derpgroup.livefinder.manager.TwitchUserResponse;
 import com.derpgroup.livefinder.model.TwitchClientWrapper;
-import com.derpgroup.livefinder.model.accountlinking.AccountLinkingUser;
+import com.derpgroup.livefinder.model.accountlinking.UserAccount;
 import com.derpgroup.livefinder.model.accountlinking.AuthenticationException;
 import com.derpgroup.livefinder.model.accountlinking.TwitchUser;
 
@@ -101,7 +101,7 @@ public class AuthResource {
     }
     
     LOG.debug("Retrieving user details for derpId '" + userId + "'.");
-    AccountLinkingUser user = accountLinkingDAO.getUserByUserId(userId);
+    UserAccount user = accountLinkingDAO.getUserByUserId(userId);
     
     if(user == null){
       LOG.error("No valid user details were associated with the token provided.");
@@ -120,7 +120,7 @@ public class AuthResource {
     //TODO: Refactor to be generic?
     //TODO: Move accessToken logic into a filter
     
-    AccountLinkingUser user;
+    UserAccount user;
     try {
       user = validateAccessToken(accessToken);
     } catch (AuthenticationException e) {
@@ -149,7 +149,7 @@ public class AuthResource {
   @Produces(MediaType.TEXT_PLAIN)
   public Response doTwitchAuth(@QueryParam("code") String code,@QueryParam("state") String state){
     
-    AccountLinkingUser user;
+    UserAccount user;
     try {
       user = validateAccessToken(state);
     } catch (AuthenticationException e) {
@@ -195,7 +195,7 @@ public class AuthResource {
   @Path("/alexa")
   @Produces(MediaType.APPLICATION_JSON) 
   public Response doAlexaLinking(){
-    AccountLinkingUser user = new AccountLinkingUser();
+    UserAccount user = new UserAccount();
     String userId = UUID.randomUUID().toString();
     user.setUserId(userId);
     accountLinkingDAO.updateUser(user);
@@ -205,7 +205,7 @@ public class AuthResource {
     return Response.ok(user).header("Access-Token", accessToken).build();
   }
   
-  public AccountLinkingUser validateAccessToken(String accessToken) throws AuthenticationException{
+  public UserAccount validateAccessToken(String accessToken) throws AuthenticationException{
 
     String userId = null;
     if(accessToken == null){
@@ -221,7 +221,7 @@ public class AuthResource {
     }
     
     LOG.debug("Looking up user for userId '" + userId + "'.");
-    AccountLinkingUser user = accountLinkingDAO.getUserByUserId(userId);
+    UserAccount user = accountLinkingDAO.getUserByUserId(userId);
     if(user == null){
       String error = "Couldn't find user with userId '" + userId + "'.";
       throw new AuthenticationException(error);

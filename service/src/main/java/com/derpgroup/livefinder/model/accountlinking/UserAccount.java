@@ -1,11 +1,12 @@
 package com.derpgroup.livefinder.model.accountlinking;
 
-public class AccountLinkingUser {
+public class UserAccount {
 
   private String userId;
   private TwitchUser twitchUser;
   private String steamId;
   private String alexaId;
+  private long dateCreated;
   
   public String getUserId() {
     return userId;
@@ -39,9 +40,18 @@ public class AccountLinkingUser {
     this.alexaId = alexaId;
   }
 
+  public long getDateCreated() {
+    return dateCreated;
+  }
+
+  public void setDateCreated(long dateCreated) {
+    this.dateCreated = dateCreated;
+  }
+
   @Override
   public String toString() {
-    return "AccountLinkingUser [userId=" + userId + ", twitchUser="
-        + twitchUser + ", steamId=" + steamId + ", alexaId=" + alexaId + "]";
+    return "UserAccount [userId=" + userId + ", twitchUser=" + twitchUser
+        + ", steamId=" + steamId + ", alexaId=" + alexaId + ", dateCreated="
+        + dateCreated + "]";
   }
 }

@@ -1,9 +1,9 @@
 package com.derpgroup.livefinder.model.accountlinking;
 
-public class InterfaceMapping {
+public class ExternalAccountLink {
 
   private String userId;
-  private String interfaceUserId;
+  private String externalUserId;
   private String authToken;
   private InterfaceName interfaceName;
   
@@ -15,12 +15,12 @@ public class InterfaceMapping {
     this.userId = userId;
   }
   
-  public String getInterfaceUserId() {
-    return interfaceUserId;
+  public String getExternalUserId() {
+    return externalUserId;
   }
   
-  public void setInterfaceUserId(String interfaceUserId) {
-    this.interfaceUserId = interfaceUserId;
+  public void setExternalUserId(String externalUserId) {
+    this.externalUserId = externalUserId;
   }
   
   public String getAuthToken() {

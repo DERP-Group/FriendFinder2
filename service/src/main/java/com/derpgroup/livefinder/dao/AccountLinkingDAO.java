@@ -1,12 +1,12 @@
 package com.derpgroup.livefinder.dao;
 
-import com.derpgroup.livefinder.model.accountlinking.AccountLinkingUser;
+import com.derpgroup.livefinder.model.accountlinking.UserAccount;
 
 public interface AccountLinkingDAO {
 
-  public AccountLinkingUser getUserByUserId(String alexaUserId);
+  public UserAccount getUserByUserId(String alexaUserId);
   
-  public AccountLinkingUser updateUser(AccountLinkingUser user);
+  public UserAccount updateUser(UserAccount user);
   
   public String generateMappingTokenForUserId(String userId);
   
