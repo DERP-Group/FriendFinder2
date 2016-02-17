@@ -86,6 +86,13 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
         + "dateCreated TIMESTAMP NOT NULL DEFAULT(NOW())"
         + ");";
     executeStatement(linkingTokenTableCreation);
+    
+    String authorizationTableCreation = "CREATE TABLE Authorization("
+        + "token UUID NOT NULL DEFAULT(RANDOM_UUID()),"
+        + "userId varchar(255) NOT NULL,"
+        + "dateCreated TIMESTAMP NOT NULL DEFAULT(NOW())"
+        + ");";
+    executeStatement(authorizationTableCreation);
     conn.commit();
     conn.setAutoCommit(true);
   }
@@ -145,8 +152,8 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
     }
 
     ResultSet response;
-    String linkingTokenRetrieve = "SELECT TOP 1 * FROM LinkingToken WHERE userId = '" + userId + "';";
-       // + " ORDER BY dateCreated DESC";
+    String linkingTokenRetrieve = "SELECT TOP 1 token FROM LinkingToken WHERE userId = '" + userId + "'"
+        + " ORDER BY dateCreated DESC";
     try {
       response = executeQuery(linkingTokenRetrieve);
       response.first();
@@ -175,26 +182,65 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
 
   @Override
   public void expireMappingToken(String token) {
-    // TODO Auto-generated method stub
+    String linkingTokenDelete = "DELETE FROM LinkingToken WHERE token = '" + token + "';";
 
+    try {
+      executeStatement(linkingTokenDelete);
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
   }
 
   @Override
   public String generateAuthToken(String userId) {
-    // TODO Auto-generated method stub
+
+    String accessTokenCreate = "INSERT INTO Authorization(userId) VALUES('" + userId + "');";
+
+    try {
+      executeStatement(accessTokenCreate);
+    } catch (SQLException e) {
+      e.printStackTrace();
+      return null;
+    }
+
+    ResultSet response;
+    String accessTokenRetrieve = "SELECT TOP 1 token FROM Authorization WHERE userId = '" + userId + "'"
+        + " ORDER BY dateCreated DESC";
+    try {
+      response = executeQuery(accessTokenRetrieve);
+      response.first();
+      return response.getString("token");
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
     return null;
   }
 
   @Override
   public String getUserIdByAuthToken(String token) {
-    // TODO Auto-generated method stub
+
+    ResultSet response;
+    String accessTokenRetrieve = "SELECT TOP 1 userId FROM Authorization WHERE token = '" + token + "'"
+        + " ORDER BY dateCreated DESC";
+    try {
+      response = executeQuery(accessTokenRetrieve);
+      response.first();
+      return response.getString("userId");
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
     return null;
   }
 
   @Override
   public void expireGrantedToken(String token) {
-    // TODO Auto-generated method stub
+    String accessTokenDelete = "DELETE FROM Authorization WHERE token = '" + token + "';";
 
+    try {
+      executeStatement(accessTokenDelete);
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
   }
 
 }

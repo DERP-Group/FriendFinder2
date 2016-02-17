@@ -2,6 +2,7 @@ package com.derpgroup.livefinder.dao.impl;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -83,6 +84,49 @@ public class H2EmbeddedAccountLinkingDAOTest {
     String userIdRetrieved = dao.getUserIdByMappingToken(responseToken);
     assertNotNull(userIdRetrieved);
     assertEquals(userIdRetrieved, userId);
+  }
+  
+  @Test
+  public void testDeleteLinkingToken(){
+    String userId = "asdf";
+    String responseToken = dao.generateMappingTokenForUserId(userId);
+    String userIdRetrieved = dao.getUserIdByMappingToken(responseToken);
+    assertNotNull(userIdRetrieved);
+    assertEquals(userIdRetrieved, userId);
+    
+    dao.expireMappingToken(responseToken);
+    userIdRetrieved = dao.getUserIdByMappingToken(responseToken);
+    assertNull(userIdRetrieved);
+  }
+  
+  @Test
+  public void testCreateAccessToken(){
+    String userId = "asdf";
+    String responseToken = dao.generateAuthToken(userId);
+    assertNotNull(responseToken);
+    assertEquals(36,responseToken.length());
+  }
+  
+  @Test
+  public void testRetrieveAccessToken(){
+    String userId = "asdf";
+    String responseToken = dao.generateAuthToken(userId);
+    String userIdRetrieved = dao.getUserIdByAuthToken(responseToken);
+    assertNotNull(userIdRetrieved);
+    assertEquals(userIdRetrieved, userId);
+  }
+  
+  @Test
+  public void testDeleteAccessToken(){
+    String userId = "asdf";
+    String responseToken = dao.generateAuthToken(userId);
+    String userIdRetrieved = dao.getUserIdByAuthToken(responseToken);
+    assertNotNull(userIdRetrieved);
+    assertEquals(userIdRetrieved, userId);
+    
+    dao.expireGrantedToken(responseToken);
+    userIdRetrieved = dao.getUserIdByAuthToken(responseToken);
+    assertNull(userIdRetrieved);
   }
   
   @After
