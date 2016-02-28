@@ -5,14 +5,17 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.After;
 
 import com.derpgroup.livefinder.model.accountlinking.UserAccount;
 
+//@Ignore
 public class H2EmbeddedAccountLinkingDAOTest {
 
   private H2EmbeddedAccountLinkingDAO dao;
@@ -35,9 +38,10 @@ public class H2EmbeddedAccountLinkingDAOTest {
     dao.executeStatement("SELECT * FROM AccountLink"); //Confirms that table exists
   }
   
-  @Test(expected = SQLException.class)
+  @Test
   public void testFixtureDataSetup_badTableName() throws SQLException{
-    dao.executeStatement("SELECT * FROM badTable");
+    ResultSet rs = dao.executeStatement("SELECT * FROM badTable");
+    assertNull(rs);
   }
   
   @Test

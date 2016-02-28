@@ -5,6 +5,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import javax.sql.rowset.CachedRowSet;
+import javax.sql.rowset.RowSetProvider;
+
 import org.h2.jdbcx.JdbcDataSource;
 
 import com.derpgroup.livefinder.dao.AccountLinkingDAO;
@@ -41,31 +44,84 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
     }
   }
   
-  protected ResultSet executeStatement(String sql) throws SQLException{
-    Statement statement = conn.createStatement();
+  protected ResultSet executeStatement(String sql){
+    Statement statement = null;
+    ResultSet rs = null;
+    CachedRowSet crs = null;
     
     try{
-     boolean resultSetRows = statement.execute(sql);
-     if(resultSetRows){
-       return statement.getResultSet();
-     }
+      statement = conn.createStatement();
+      boolean resultSetRows = statement.execute(sql);
+      if(resultSetRows){
+        rs = statement.executeQuery(sql);
+        crs = RowSetProvider.newFactory().createCachedRowSet();
+        crs.populate(rs);
+        return crs;
+      }
     }catch(SQLException e){
       e.printStackTrace();
-      throw e;
+    }finally{
+      try{
+        if(rs != null){
+          rs.close();
+        }
+        if(statement != null){
+          statement.close();
+        }
+      }catch(Exception e1){
+        e1.printStackTrace();
+      }
     }
     return null;
   }
   
-  protected ResultSet executeQuery(String sql) throws SQLException{
-    Statement statement = conn.createStatement();
+  protected ResultSet executeQuery(String sql){
     
-    try{
-      return statement.executeQuery(sql);
+    try(
+        Statement statement = conn.createStatement();
+        ResultSet rs = statement.executeQuery(sql);
+        CachedRowSet crs = RowSetProvider.newFactory().createCachedRowSet();
+        ){
+      crs.populate(rs);
+      return crs;
     }catch(SQLException e){
       e.printStackTrace();
-      throw e;
     }
+    return null;
   }
+  
+/*  protected ResultSet executeQuery(String sql){
+    Statement statement = null;
+    ResultSet rs = null;
+    CachedRowSet crs = null;
+    
+    try{
+      statement = conn.createStatement();
+      //statement.closeOnCompletion();
+      rs = statement.executeQuery(sql);
+      crs = RowSetProvider.newFactory().createCachedRowSet();
+      crs.populate(rs);
+      return crs;
+    }catch(SQLException e){
+      e.printStackTrace();
+    }finally{
+      try{
+        if(rs != null){
+          rs.close();
+        }
+      }catch(Exception e1){
+        e1.printStackTrace();
+      }
+      try{
+        if(statement != null){
+          statement.close();
+        }
+      }catch(Exception e1){
+        e1.printStackTrace();
+      }
+    }
+    return null;
+  }*/
   
   protected void setupFixtureData() throws SQLException{
     conn.setAutoCommit(false);
@@ -105,12 +161,12 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
   public UserAccount getUserByUserId(String alexaUserId) {
     String userSelect = "SELECT id FROM User WHERE id = '" + alexaUserId + "';";
     ResultSet response;
-    try {
+//    try {
       response = executeQuery(userSelect);
-    } catch (SQLException e) {
+    /*} catch (SQLException e) {
       e.printStackTrace();
       return null;
-    }
+    }*/
     
     UserAccount user = new UserAccount();
     try {
@@ -129,12 +185,12 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
 
     String userCreate = "MERGE INTO User(id) KEY(id) VALUES('" + user.getUserId() + "');";
 
-    try {
+//    try {
       executeStatement(userCreate);
-    } catch (SQLException e) {
+    /*} catch (SQLException e) {
       e.printStackTrace();
       return null;
-    }
+    }*/
     
     return getUserByUserId(user.getUserId());
   }
@@ -144,12 +200,12 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
 
     String linkingTokenCreate = "INSERT INTO LinkingToken(userId) VALUES('" + userId + "');";
 
-    try {
+//    try {
       executeStatement(linkingTokenCreate);
-    } catch (SQLException e) {
+    /*} catch (SQLException e) {
       e.printStackTrace();
       return null;
-    }
+    }*/
 
     ResultSet response;
     String linkingTokenRetrieve = "SELECT TOP 1 token FROM LinkingToken WHERE userId = '" + userId + "'"
@@ -172,7 +228,9 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
         + " ORDER BY dateCreated DESC";
     try {
       response = executeQuery(linkingTokenRetrieve);
-      response.first();
+      if(!response.next()){
+        return null;
+      }
       return response.getString("userId");
     } catch (SQLException e) {
       e.printStackTrace();
@@ -184,11 +242,11 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
   public void expireMappingToken(String token) {
     String linkingTokenDelete = "DELETE FROM LinkingToken WHERE token = '" + token + "';";
 
-    try {
+//    try {
       executeStatement(linkingTokenDelete);
-    } catch (SQLException e) {
+    /*} catch (SQLException e) {
       e.printStackTrace();
-    }
+    }*/
   }
 
   @Override
@@ -196,12 +254,12 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
 
     String accessTokenCreate = "INSERT INTO Authorization(userId) VALUES('" + userId + "');";
 
-    try {
+//    try {
       executeStatement(accessTokenCreate);
-    } catch (SQLException e) {
+    /*} catch (SQLException e) {
       e.printStackTrace();
       return null;
-    }
+    }*/
 
     ResultSet response;
     String accessTokenRetrieve = "SELECT TOP 1 token FROM Authorization WHERE userId = '" + userId + "'"
@@ -224,7 +282,9 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
         + " ORDER BY dateCreated DESC";
     try {
       response = executeQuery(accessTokenRetrieve);
-      response.first();
+      if(!response.next()){
+        return null;
+      }
       return response.getString("userId");
     } catch (SQLException e) {
       e.printStackTrace();
@@ -236,11 +296,11 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
   public void expireGrantedToken(String token) {
     String accessTokenDelete = "DELETE FROM Authorization WHERE token = '" + token + "';";
 
-    try {
+//    try {
       executeStatement(accessTokenDelete);
-    } catch (SQLException e) {
+    /*} catch (SQLException e) {
       e.printStackTrace();
-    }
+    }*/
   }
 
 }

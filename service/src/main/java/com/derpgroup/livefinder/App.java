@@ -30,6 +30,7 @@ import java.io.IOException;
 import com.derpgroup.livefinder.configuration.MainConfig;
 import com.derpgroup.livefinder.configuration.TwitchAccountLinkingConfig;
 import com.derpgroup.livefinder.dao.AccountLinkingDAO;
+import com.derpgroup.livefinder.dao.impl.H2EmbeddedAccountLinkingDAO;
 import com.derpgroup.livefinder.dao.impl.InMemoryAccountLinkingDAO;
 import com.derpgroup.livefinder.health.BasicHealthCheck;
 import com.derpgroup.livefinder.model.SteamClientWrapper;
@@ -68,7 +69,8 @@ public class App extends Application<MainConfig> {
     environment.healthChecks().register("basics", new BasicHealthCheck(config, environment));
 
     // DAO
-    AccountLinkingDAO accountLinkingDAO = new InMemoryAccountLinkingDAO();
+//    AccountLinkingDAO accountLinkingDAO = new InMemoryAccountLinkingDAO();
+    AccountLinkingDAO accountLinkingDAO = new H2EmbeddedAccountLinkingDAO();
     
     SteamClientWrapper wrapper = SteamClientWrapper.getInstance();
     wrapper.init(config.getLiveFinderConfig().getApiKey());
