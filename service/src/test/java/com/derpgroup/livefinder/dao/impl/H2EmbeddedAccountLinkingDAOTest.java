@@ -15,7 +15,7 @@ import org.junit.After;
 
 import com.derpgroup.livefinder.model.accountlinking.UserAccount;
 
-//@Ignore
+@Ignore
 public class H2EmbeddedAccountLinkingDAOTest {
 
   private H2EmbeddedAccountLinkingDAO dao;

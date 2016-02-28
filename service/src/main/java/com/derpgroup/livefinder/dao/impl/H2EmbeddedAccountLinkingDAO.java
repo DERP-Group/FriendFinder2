@@ -45,43 +45,34 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
   }
   
   protected ResultSet executeStatement(String sql){
-    Statement statement = null;
-    ResultSet rs = null;
+
     CachedRowSet crs = null;
     
-    try{
-      statement = conn.createStatement();
+    try(
+        Statement statement = conn.createStatement();
+        ResultSet rs = statement.getResultSet();
+        ){
       boolean resultSetRows = statement.execute(sql);
       if(resultSetRows){
-        rs = statement.executeQuery(sql);
         crs = RowSetProvider.newFactory().createCachedRowSet();
         crs.populate(rs);
         return crs;
       }
     }catch(SQLException e){
       e.printStackTrace();
-    }finally{
-      try{
-        if(rs != null){
-          rs.close();
-        }
-        if(statement != null){
-          statement.close();
-        }
-      }catch(Exception e1){
-        e1.printStackTrace();
-      }
     }
     return null;
   }
   
   protected ResultSet executeQuery(String sql){
+
+    CachedRowSet crs = null;
     
     try(
         Statement statement = conn.createStatement();
         ResultSet rs = statement.executeQuery(sql);
-        CachedRowSet crs = RowSetProvider.newFactory().createCachedRowSet();
         ){
+      crs = RowSetProvider.newFactory().createCachedRowSet();
       crs.populate(rs);
       return crs;
     }catch(SQLException e){
@@ -89,39 +80,6 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
     }
     return null;
   }
-  
-/*  protected ResultSet executeQuery(String sql){
-    Statement statement = null;
-    ResultSet rs = null;
-    CachedRowSet crs = null;
-    
-    try{
-      statement = conn.createStatement();
-      //statement.closeOnCompletion();
-      rs = statement.executeQuery(sql);
-      crs = RowSetProvider.newFactory().createCachedRowSet();
-      crs.populate(rs);
-      return crs;
-    }catch(SQLException e){
-      e.printStackTrace();
-    }finally{
-      try{
-        if(rs != null){
-          rs.close();
-        }
-      }catch(Exception e1){
-        e1.printStackTrace();
-      }
-      try{
-        if(statement != null){
-          statement.close();
-        }
-      }catch(Exception e1){
-        e1.printStackTrace();
-      }
-    }
-    return null;
-  }*/
   
   protected void setupFixtureData() throws SQLException{
     conn.setAutoCommit(false);
@@ -212,7 +170,9 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
         + " ORDER BY dateCreated DESC";
     try {
       response = executeQuery(linkingTokenRetrieve);
-      response.first();
+      if(!response.next()){
+        return null;
+      }
       return response.getString("token");
     } catch (SQLException e) {
       e.printStackTrace();
@@ -228,7 +188,7 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
         + " ORDER BY dateCreated DESC";
     try {
       response = executeQuery(linkingTokenRetrieve);
-      if(!response.next()){
+      if(response == null || !response.next()){
         return null;
       }
       return response.getString("userId");
