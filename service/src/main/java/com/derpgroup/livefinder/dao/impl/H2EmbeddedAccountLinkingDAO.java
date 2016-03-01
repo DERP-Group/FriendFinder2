@@ -23,6 +23,12 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
     ds.setURL("jdbc:h2:mem:");
     ds.setUser("sa");
     ds.setPassword("sa");
+    try {
+      init();
+    } catch (SQLException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
   }
   
   protected void init() throws SQLException {
@@ -256,11 +262,7 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
   public void expireGrantedToken(String token) {
     String accessTokenDelete = "DELETE FROM Authorization WHERE token = '" + token + "';";
 
-//    try {
       executeStatement(accessTokenDelete);
-    /*} catch (SQLException e) {
-      e.printStackTrace();
-    }*/
   }
 
 }

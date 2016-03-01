@@ -47,11 +47,6 @@
         "archivedFileCount": 5
       }
     ],
-    "level": "INFO",
-    "loggers": {
-      "com": {
-        "derpgroup": "DEBUG"
-      }
-    }
+    "level": "INFO"
   }
 }

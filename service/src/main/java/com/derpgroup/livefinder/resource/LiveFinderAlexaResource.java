@@ -100,6 +100,8 @@ public class LiveFinderAlexaResource {
     manager = new LiveFinderManager(accountLinkingDAO);
     mapper = new ObjectMapper();
     
+    mapper.registerModule(new MixInModule());
+    
     linkingFlowHostname = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getLinkingFlowHostname();
     linkingFlowProtocol = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getLinkingFlowProtocol();
     landingPagePath = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getLandingPagePath();
@@ -111,7 +113,6 @@ public class LiveFinderAlexaResource {
   @POST
   public SpeechletResponseEnvelope doAlexaRequest(SpeechletRequestEnvelope request, @HeaderParam("SignatureCertChainUrl") String signatureCertChainUrl, 
       @HeaderParam("Signature") String signature, @QueryParam("testFlag") Boolean testFlag){
-    
     LiveFinderMetadata outputMetadata = null;
     try {
       if (request.getRequest() == null) {
@@ -145,8 +146,6 @@ public class LiveFinderAlexaResource {
       
       CommonMetadata inputMetadata = mapper.convertValue(sessionAttributes, new TypeReference<LiveFinderMetadata>(){});
       outputMetadata = mapper.convertValue(sessionAttributes, new TypeReference<LiveFinderMetadata>(){});
-      
-      mapper.registerModule(new MixInModule());
 
       // Build the ServiceOutput object, which gets updated within the service itself
       ServiceOutput serviceOutput = new ServiceOutput();
