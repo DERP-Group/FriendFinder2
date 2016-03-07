@@ -6,6 +6,7 @@ public class UserAccount {
   private TwitchUser twitchUser;
   private String steamId;
   private String alexaId;
+  private String firstName;
   private long dateCreated;
   
   public String getUserId() {
@@ -40,6 +41,14 @@ public class UserAccount {
     this.alexaId = alexaId;
   }
 
+  public String getFirstName() {
+    return firstName;
+  }
+
+  public void setFirstName(String firstName) {
+    this.firstName = firstName;
+  }
+
   public long getDateCreated() {
     return dateCreated;
   }
@@ -51,7 +60,7 @@ public class UserAccount {
   @Override
   public String toString() {
     return "UserAccount [userId=" + userId + ", twitchUser=" + twitchUser
-        + ", steamId=" + steamId + ", alexaId=" + alexaId + ", dateCreated="
-        + dateCreated + "]";
+        + ", steamId=" + steamId + ", alexaId=" + alexaId + ", firstName="
+        + firstName + ", dateCreated=" + dateCreated + "]";
   }
 }

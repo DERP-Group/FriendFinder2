@@ -61,6 +61,31 @@ public class H2EmbeddedAccountLinkingDAOTest {
   }
   
   @Test
+  public void testUpdateUser(){
+    testCreateUser();
+    
+    UserAccount user = new UserAccount();
+    user.setUserId("asdf");
+    user.setFirstName("1234");
+    
+    UserAccount updatedUser = dao.updateUser(user);
+    assertNotNull(updatedUser);
+    assertNotNull(updatedUser.getUserId());
+    assertNotNull(updatedUser.getDateCreated());
+    assertNotNull(updatedUser.getFirstName());
+    assertEquals(updatedUser.getFirstName(),user.getFirstName());
+    assertEquals(updatedUser.getUserId(),user.getUserId());
+    
+    UserAccount retrievedUser = dao.getUserByUserId(user.getUserId());
+    assertNotNull(retrievedUser);
+    assertNotNull(retrievedUser.getUserId());
+    assertNotNull(retrievedUser.getDateCreated());
+    assertNotNull(retrievedUser.getFirstName());
+    assertEquals(retrievedUser.getFirstName(),user.getFirstName());
+    assertEquals(retrievedUser.getUserId(),user.getUserId());
+  }
+  
+  @Test
   public void testRetrieveUserById(){
     UserAccount user = new UserAccount();
     user.setUserId("asdf");
