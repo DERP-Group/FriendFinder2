@@ -27,6 +27,8 @@ import io.dropwizard.setup.Environment;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
@@ -63,21 +65,21 @@ public class AuthResource {
   private static final Logger LOG = LoggerFactory.getLogger(AuthResource.class);
   
   private AccountLinkingDAO accountLinkingDAO;
-  private String steamLinkingFlowHostname;
+  /*private String steamLinkingFlowHostname;
   private String steamSuccessPagePath;
   private String steamErrorPagePath;
-  private String alexaRedirectPath;
+  private String alexaRedirectPath;*/
   private TwitchClient twitchClient;
   
   
   public AuthResource(MainConfig config, Environment env, AccountLinkingDAO accountLinkingDAO) {
     this.accountLinkingDAO = accountLinkingDAO;
     
-    steamLinkingFlowHostname = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getLinkingFlowHostname();
+   /* steamLinkingFlowHostname = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getLinkingFlowHostname();
     steamSuccessPagePath = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getSuccessPagePath();
     steamErrorPagePath = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getErrorPagePath();
     
-    alexaRedirectPath = config.getLiveFinderConfig().getAlexaAccountLinkingConfig().getAlexaRedirectPath();
+    alexaRedirectPath = config.getLiveFinderConfig().getAlexaAccountLinkingConfig().getAlexaRedirectPath();*/
     
     twitchClient = TwitchClientWrapper.getInstance().getClient();
   }
@@ -142,6 +144,22 @@ public class AuthResource {
     accountLinkingDAO.updateUser(user);
 
     return user;
+  }
+  
+  @PUT
+  @Path("/user")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Object updateUser(@HeaderParam("Authorization") String accessToken, UserAccount user){
+    
+    UserAccount tokenUser;
+    try {
+      tokenUser = validateAccessToken(accessToken);
+    } catch (AuthenticationException e) {
+      return Response.status(Response.Status.UNAUTHORIZED).entity(e).build();
+    }
+    user.setUserId(tokenUser.getUserId());
+    
+    return accountLinkingDAO.updateUser(user);
   }
   
   @GET

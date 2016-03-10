@@ -47,8 +47,12 @@ function redeemMappingTokenFailure(error, message){
 
 function populateForm(userAccount){
 	var steamId = userAccount.steamId;
+	var firstName = userAccount.firstName;
 	if(steamId){
 		qwery('#steamExternalId')[0].value = steamId;
+	}
+	if(firstName){
+		qwery('#firstName')[0].value = firstName;
 	}
 }
 
@@ -66,6 +70,26 @@ function linkSteamId(){
 	}else{
 		alert('A valid steamId must be provided.');
 	}
+}
+
+function updateUser(){
+	var firstName = qwery('#firstName')[0].value;
+	var steamId = qwery('#steamExternalId')[0].value;
+	var requestBody = {'firstName':firstName,'steamId':steamId};
+	
+	var requestHeaders = {};
+	requestHeaders.Authorization = accessToken;
+	
+	var url = '/livefinder/auth/user';
+	reqwest({
+	    url: url
+	    , method: 'put'
+	    , type: 'json'
+	    , data: JSON.stringify(requestBody)
+	    , headers: requestHeaders
+	    , contentType: 'application/json'
+	}).then(linkSteamIdSuccess, linkSteamIdFailure)
+	.always(displayNotificationDiv);
 }
 
 function linkSteamIdSuccess(response){

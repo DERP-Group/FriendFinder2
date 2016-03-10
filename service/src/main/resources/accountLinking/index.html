@@ -26,11 +26,17 @@
 				<input type="text" id="username" placeholder="Username (optional)">
 			</div>
 			<div>
-				<label for="steamIdInput">Steam Id:</label>
+				<label for="steamExternalId">Steam Id:</label>
 				<input type="text" id="steamExternalId" placeholder="Steam Id (optional)">
 			</div>
+			<div>
+				<label for="firstName">First Name:</label>
+				<input type="text" id="firstName" placeholder="First name (optional)">
+			</div>
 			<input type="hidden" name="vendorId" id="alexaVendorId" value="M1IOYIOXZFQCCS"/>
+			<input type="hidden" name="userId" id="userId" value="M1IOYIOXZFQCCS"/>
 			<button type="button" id="steamSubmitButton" onclick="linkSteamId();">Link Steam ID</button>
+			<button type="button" id="updateUserButton" onclick="updateUser();">Update User</button>
 			<a href="#" target="_blank" id="twitchAuthLink">Link your Twitch Account here</a>
 			<button type="submit" id="registrationSubmitButton" onclick="submitRegistration();">Complete Account Linking</button>
 		</form>

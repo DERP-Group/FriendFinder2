@@ -94,7 +94,13 @@ public class LiveFinderManager extends AbstractManager {
       ServiceOutput serviceOutput) throws DerpwizardException {
     serviceOutput.setConversationEnded(false);
 
-    String outputMessage = "Who or what would you like me to find?";
+    UserAccount user = getUser(voiceInput,null);
+    StringBuilder outputMessageBuilder = new StringBuilder();
+    if(!StringUtils.isEmpty(user.getFirstName())){
+      outputMessageBuilder.append("Hi " + user.getFirstName() + "! ");
+    }
+    outputMessageBuilder.append("Who or what would you like me to find?");
+    String outputMessage = outputMessageBuilder.toString();
     serviceOutput.getVisualOutput().setTitle("Hello...");
     serviceOutput.getVisualOutput().setText(outputMessage);
     serviceOutput.getVoiceOutput().setSsmltext(outputMessage);
