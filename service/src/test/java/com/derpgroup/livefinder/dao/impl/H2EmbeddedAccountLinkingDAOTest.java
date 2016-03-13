@@ -13,9 +13,11 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.After;
 
+import com.derpgroup.livefinder.model.accountlinking.ExternalAccountLink;
+import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
 import com.derpgroup.livefinder.model.accountlinking.UserAccount;
 
-@Ignore
+
 public class H2EmbeddedAccountLinkingDAOTest {
 
   private H2EmbeddedAccountLinkingDAO dao;
@@ -156,6 +158,73 @@ public class H2EmbeddedAccountLinkingDAOTest {
     dao.expireGrantedToken(responseToken);
     userIdRetrieved = dao.getUserIdByAuthToken(responseToken);
     assertNull(userIdRetrieved);
+  }
+  
+  @Test
+  public void testCreateAccountLink(){
+    ExternalAccountLink accountLink = new ExternalAccountLink();
+    accountLink.setUserId("asdf");
+    accountLink.setExternalUserId("1234");
+    accountLink.setInterfaceName(InterfaceName.ALEXA);
+    accountLink.setAuthToken("qwerty");
+    
+    ExternalAccountLink accountLinkRetrieved = dao.createAccountLink(accountLink);
+    assertNotNull(accountLinkRetrieved);
+    assertNotNull(accountLinkRetrieved.getUserId());
+    assertNotNull(accountLinkRetrieved.getExternalUserId());
+    assertNotNull(accountLinkRetrieved.getInterfaceName());
+    assertNotNull(accountLinkRetrieved.getAuthToken());
+    
+    assertEquals(accountLink.getUserId(), accountLinkRetrieved.getUserId());
+    assertEquals(accountLink.getExternalUserId(), accountLinkRetrieved.getExternalUserId());
+    assertEquals(accountLink.getInterfaceName(), accountLinkRetrieved.getInterfaceName());
+    assertEquals(accountLink.getAuthToken(), accountLinkRetrieved.getAuthToken());
+  }
+  
+  @Test
+  public void testRetrieveAccountLink(){
+    ExternalAccountLink accountLinkToCreate = new ExternalAccountLink();
+    accountLinkToCreate.setUserId("asdf");
+    accountLinkToCreate.setExternalUserId("1234");
+    accountLinkToCreate.setInterfaceName(InterfaceName.ALEXA);
+    accountLinkToCreate.setAuthToken("qwerty");
+    
+    dao.createAccountLink(accountLinkToCreate);
+    
+    ExternalAccountLink accountLinkRetrieved = dao.getAccountLinkByUserIdAndExternalSystemName(
+        accountLinkToCreate.getUserId(), accountLinkToCreate.getInterfaceName().name());
+    ExternalAccountLink accountLinkRetrieved2 = dao.getAccountLinkByExternalUserIdAndExternalSystemName(
+        accountLinkToCreate.getExternalUserId(), accountLinkToCreate.getInterfaceName().name());
+    
+    assertNotNull(accountLinkRetrieved);
+    assertNotNull(accountLinkRetrieved.getUserId());
+    assertNotNull(accountLinkRetrieved.getExternalUserId());
+    assertNotNull(accountLinkRetrieved.getInterfaceName());
+    assertNotNull(accountLinkRetrieved.getAuthToken());
+    
+    assertEquals(accountLinkRetrieved2.getUserId(), accountLinkRetrieved.getUserId());
+    assertEquals(accountLinkRetrieved2.getExternalUserId(), accountLinkRetrieved.getExternalUserId());
+    assertEquals(accountLinkRetrieved2.getInterfaceName(), accountLinkRetrieved.getInterfaceName());
+    assertEquals(accountLinkRetrieved2.getAuthToken(), accountLinkRetrieved.getAuthToken());
+  }
+  
+  @Test
+  public void testCreateAccountLink_noAuthToken(){
+    ExternalAccountLink accountLink = new ExternalAccountLink();
+    accountLink.setUserId("asdf");
+    accountLink.setExternalUserId("1234");
+    accountLink.setInterfaceName(InterfaceName.ALEXA);
+    
+    ExternalAccountLink accountLinkRetrieved = dao.createAccountLink(accountLink);
+    assertNotNull(accountLinkRetrieved);
+    assertNotNull(accountLinkRetrieved.getUserId());
+    assertNotNull(accountLinkRetrieved.getExternalUserId());
+    assertNotNull(accountLinkRetrieved.getInterfaceName());
+    assertNull(accountLinkRetrieved.getAuthToken());
+    
+    assertEquals(accountLink.getUserId(), accountLinkRetrieved.getUserId());
+    assertEquals(accountLink.getExternalUserId(), accountLinkRetrieved.getExternalUserId());
+    assertEquals(accountLink.getInterfaceName(), accountLinkRetrieved.getInterfaceName());
   }
   
   @After

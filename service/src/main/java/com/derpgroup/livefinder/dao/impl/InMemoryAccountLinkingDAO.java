@@ -100,4 +100,24 @@ public class InMemoryAccountLinkingDAO implements AccountLinkingDAO {
   public void expireGrantedToken(String token) {
     grantedAuthTokens.remove(token);
   }
+
+  @Override
+  public ExternalAccountLink createAccountLink(ExternalAccountLink link) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public ExternalAccountLink getAccountLinkByUserIdAndExternalSystemName(
+      String userId, String externalSystemName) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public ExternalAccountLink getAccountLinkByExternalUserIdAndExternalSystemName(
+      String externalUserId, String externalSystemName) {
+    // TODO Auto-generated method stub
+    return null;
+  }
 }

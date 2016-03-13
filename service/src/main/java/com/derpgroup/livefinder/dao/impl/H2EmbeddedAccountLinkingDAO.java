@@ -12,6 +12,8 @@ import javax.sql.rowset.RowSetProvider;
 import org.h2.jdbcx.JdbcDataSource;
 
 import com.derpgroup.livefinder.dao.AccountLinkingDAO;
+import com.derpgroup.livefinder.model.accountlinking.ExternalAccountLink;
+import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
 import com.derpgroup.livefinder.model.accountlinking.UserAccount;
 
 public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
@@ -105,9 +107,10 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
     executeStatement(userTableCreation);
     
     String accountLinkTableCreation = "CREATE TABLE AccountLink("
-        + "userId varchar(255),"
-        + "externalUserId varchar(255),"
-        + "externalSystemName varchar(64)"
+        + "userId varchar(255) NOT NULL,"
+        + "externalUserId varchar(255) NOT NULL,"
+        + "externalSystemName varchar(64) NOT NULL,"
+        + "externalSystemToken varchar(255) NULL"
         + ");";
     executeStatement(accountLinkTableCreation);
     
@@ -287,5 +290,79 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
       }
     }
     return statement;
+  }
+  
+  @Override
+  public ExternalAccountLink createAccountLink(ExternalAccountLink link){
+    ArrayList<Object> parameters = new ArrayList<Object>();
+    parameters.add(link.getUserId());
+    parameters.add(link.getExternalUserId());
+    parameters.add(link.getInterfaceName().name());
+    parameters.add(link.getAuthToken());
+    String createAccountLink = "MERGE INTO AccountLink(userId, externalUserId, externalSystemName, externalSystemToken)"
+        + " KEY(userId, externalUserId, externalSystemName) VALUES(?,?,?,?)";
+    //Should externalSystemToken be a different table with a FK relationship to this one?
+
+    executeStatement(createAccountLink, parameters);
+    
+    return getAccountLinkByUserIdAndExternalSystemName(link.getUserId(), link.getInterfaceName().name());
+  }
+  
+  @Override
+  public ExternalAccountLink getAccountLinkByUserIdAndExternalSystemName(String userId, String externalSystemName){
+    ArrayList<Object> parameters = new ArrayList<Object>();
+    parameters.add(userId);
+    parameters.add(externalSystemName);
+    String createAccountLink = "SELECT userId, externalUserId, externalSystemName, externalSystemToken"
+        + " FROM AccountLink"
+        + " WHERE userId = ?"
+        + " AND externalSystemName = ?";
+
+    ResultSet response;
+    response = executeQuery(createAccountLink, parameters);
+    try{
+      if(!response.next()){
+        return null;
+      }
+    
+      ExternalAccountLink link = new ExternalAccountLink();
+      link.setUserId(response.getString("userId"));
+      link.setExternalUserId(response.getString("externalUserId"));
+      link.setInterfaceName(InterfaceName.valueOf(response.getString("externalSystemName")));
+      link.setAuthToken(response.getString("externalSystemToken"));
+      return link;
+    }catch(SQLException e){
+      e.printStackTrace();
+      return null;
+    }
+  }
+  
+  @Override
+  public ExternalAccountLink getAccountLinkByExternalUserIdAndExternalSystemName(String externalUserId, String externalSystemName){
+    ArrayList<Object> parameters = new ArrayList<Object>();
+    parameters.add(externalUserId);
+    parameters.add(externalSystemName);
+    String createAccountLink = "SELECT userId, externalUserId, externalSystemName, externalSystemToken"
+        + " FROM AccountLink"
+        + " WHERE externalUserId = ?"
+        + " AND externalSystemName = ?";
+
+    ResultSet response;
+    response = executeQuery(createAccountLink, parameters);
+    try{
+      if(!response.next()){
+        return null;
+      }
+    
+      ExternalAccountLink link = new ExternalAccountLink();
+      link.setUserId(response.getString("userId"));
+      link.setExternalUserId(response.getString("externalUserId"));
+      link.setInterfaceName(InterfaceName.valueOf(response.getString("externalSystemName")));
+      link.setAuthToken(response.getString("externalSystemToken"));
+      return link;
+    }catch(SQLException e){
+      e.printStackTrace();
+      return null;
+    }
   }
 }
