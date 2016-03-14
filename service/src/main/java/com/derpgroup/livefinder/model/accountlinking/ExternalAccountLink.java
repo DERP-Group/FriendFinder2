@@ -4,8 +4,8 @@ public class ExternalAccountLink {
 
   private String userId;
   private String externalUserId;
+  private String externalSystemName;
   private String authToken;
-  private InterfaceName interfaceName;
   
   public String getUserId() {
     return userId;
@@ -22,6 +22,14 @@ public class ExternalAccountLink {
   public void setExternalUserId(String externalUserId) {
     this.externalUserId = externalUserId;
   }
+
+  public String getExternalSystemName() {
+    return externalSystemName;
+  }
+  
+  public void setExternalSystemName(String externalSystemName) {
+    this.externalSystemName = externalSystemName;
+  }
   
   public String getAuthToken() {
     return authToken;
@@ -31,11 +39,10 @@ public class ExternalAccountLink {
     this.authToken = authToken;
   }
 
-  public InterfaceName getInterfaceName() {
-    return interfaceName;
-  }
-  
-  public void setInterfaceName(InterfaceName interfaceName) {
-    this.interfaceName = interfaceName;
+  @Override
+  public String toString() {
+    return "ExternalAccountLink [userId=" + userId + ", externalUserId="
+        + externalUserId + ", externalSystemName=" + externalSystemName
+        + ", authToken=" + authToken + "]";
   }
 }

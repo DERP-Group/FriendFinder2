@@ -129,8 +129,9 @@ public class LiveFinderAlexaResource {
       
       String userId;
       String accessToken = request.getSession().getUser().getAccessToken();
+      String alexaUserId = request.getSession().getUser().getUserId();
       
-      if(StringUtils.isEmpty(request.getSession().getUser().getUserId())){
+      if(StringUtils.isEmpty(alexaUserId)){
         String message = "Missing Alexa userId.";
         LOG.error(message);
         throw new DerpwizardException(message);
@@ -143,6 +144,15 @@ public class LiveFinderAlexaResource {
         LOG.info("Found userId '" + userId + "' for access token '" + accessToken + "'.");
       }
       sessionAttributes.put("userId", userId);
+      
+      if(accountLinkingDAO.getAccountLinkByExternalUserIdAndExternalSystemName(alexaUserId, InterfaceName.ALEXA.name()) == null){
+        LOG.info("No Alexa account link found for this user, creating new link.");
+        ExternalAccountLink accountLink = new ExternalAccountLink();
+        accountLink.setUserId(userId);
+        accountLink.setExternalUserId(alexaUserId);
+        accountLink.setExternalSystemName(InterfaceName.ALEXA.name());
+        accountLinkingDAO.createAccountLink(accountLink);
+      }
       
       CommonMetadata inputMetadata = mapper.convertValue(sessionAttributes, new TypeReference<LiveFinderMetadata>(){});
       outputMetadata = mapper.convertValue(sessionAttributes, new TypeReference<LiveFinderMetadata>(){});

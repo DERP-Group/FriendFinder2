@@ -21,6 +21,9 @@
 package com.derpgroup.livefinder.resource;
 
 import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import io.dropwizard.setup.Environment;
@@ -28,6 +31,7 @@ import io.dropwizard.setup.Environment;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
+import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -41,12 +45,15 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.derpgroup.derpwizard.voice.exception.DerpwizardException;
 import com.derpgroup.livefinder.configuration.MainConfig;
 import com.derpgroup.livefinder.dao.AccountLinkingDAO;
 import com.derpgroup.livefinder.manager.TwitchClient;
 import com.derpgroup.livefinder.manager.TwitchTokenResponse;
 import com.derpgroup.livefinder.manager.TwitchUserResponse;
 import com.derpgroup.livefinder.model.TwitchClientWrapper;
+import com.derpgroup.livefinder.model.accountlinking.ExternalAccountLink;
+import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
 import com.derpgroup.livefinder.model.accountlinking.UserAccount;
 import com.derpgroup.livefinder.model.accountlinking.AuthenticationException;
 import com.derpgroup.livefinder.model.accountlinking.TwitchUser;
@@ -110,6 +117,8 @@ public class AuthResource {
       throw new WebApplicationException("No valid user details were associated with the token provided.",Response.Status.FORBIDDEN);
     }
     
+    user.setExternalAccountLinks(accountLinksListToMap(accountLinkingDAO.getAccountLinksByUserId(userId)));
+    
     String accessToken = accountLinkingDAO.generateAuthToken(user.getUserId());
     
     return Response.ok(user).header("Access-Token", accessToken).build();
@@ -119,8 +128,7 @@ public class AuthResource {
   @Path("/steam/linkIds")
   @Produces(MediaType.APPLICATION_JSON)
   public Object doSteamLinking(@QueryParam("accessToken") String accessToken, @QueryParam("externalId") String externalId){
-    //TODO: Refactor to be generic?
-    //TODO: Move accessToken logic into a filter
+    //TODO: Deprecate in favor of standard account linking flow
     
     UserAccount user;
     try {
@@ -139,17 +147,51 @@ public class AuthResource {
     }else{
       LOG.info("User '" + user.getUserId() + "' had steamId '" + user.getSteamId() + "'; updating to '" + externalId + "'.");
     }
-    user.setSteamId(externalId);
     
-    accountLinkingDAO.updateUser(user);
+    ExternalAccountLink accountLink = new ExternalAccountLink();
+    accountLink.setUserId(user.getUserId());
+    accountLink.setExternalUserId(externalId);
+    accountLink.setExternalSystemName(InterfaceName.STEAM.name());
 
+    accountLinkingDAO.createAccountLink(accountLink);
+    
+    user.setExternalAccountLinks(accountLinksListToMap(accountLinkingDAO.getAccountLinksByUserId(user.getUserId())));
     return user;
+  }
+  
+  @POST
+  @Path("/user/accountLinks")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Object linkAccount(@QueryParam("accessToken") String accessToken, ExternalAccountLink accountLink){
+    //TODO: Move accessToken logic into a filter
+    
+    UserAccount user;
+    try {
+      user = validateAccessToken(accessToken);
+    } catch (AuthenticationException e) {
+      return Response.status(Response.Status.BAD_REQUEST).entity(e).build();
+    }
+    
+    if(!user.getUserId().equals(accountLink.getUserId())){
+      String message = String.format("Cannot create an account link for account whose userId '%s' does not match current user's userId '%s'.", 
+          accountLink.getUserId(), user.getUserId());
+      return Response.status(Response.Status.BAD_REQUEST).entity(new AuthenticationException(message)).build();
+    }
+    
+    ExternalAccountLink accountLinkResponse;
+    try {
+      accountLinkResponse = createAccountLink(accountLink);
+    } catch (DerpwizardException e) {
+      return Response.status(Response.Status.BAD_REQUEST).entity(new AuthenticationException(e.getMessage())).build();
+    }
+    return accountLinkResponse;
   }
   
   @PUT
   @Path("/user")
   @Produces(MediaType.APPLICATION_JSON)
   public Object updateUser(@HeaderParam("Authorization") String accessToken, UserAccount user){
+    //TODO: Move accessToken logic into a filter
     
     UserAccount tokenUser;
     try {
@@ -159,7 +201,23 @@ public class AuthResource {
     }
     user.setUserId(tokenUser.getUserId());
     
-    return accountLinkingDAO.updateUser(user);
+    UserAccount userAccountResponse = accountLinkingDAO.updateUser(user);
+    
+    if(user.getExternalAccountLinks() != null){
+      for(ExternalAccountLink link : user.getExternalAccountLinks().values()){
+        if(!user.getUserId().equals(link.getUserId())){
+          String message = String.format("Cannot create an account link for account whose userId '%s' does not match current user's userId '%s'.",
+              user.getUserId(), link.getUserId());
+          return Response.status(Response.Status.BAD_REQUEST).entity(new AuthenticationException(message)).build();
+        }
+        
+        accountLinkingDAO.createAccountLink(link);
+      }
+    }
+    
+    userAccountResponse.setExternalAccountLinks(user.getExternalAccountLinks());
+    
+    return userAccountResponse;
   }
   
   @GET
@@ -245,7 +303,34 @@ public class AuthResource {
       throw new AuthenticationException(error);
     }
     
+    user.setExternalAccountLinks(accountLinksListToMap(accountLinkingDAO.getAccountLinksByUserId(userId)));
+    
     return user;
+  }
+  
+  //Move to eventual manager class
+  protected ExternalAccountLink createAccountLink(ExternalAccountLink accountLink) throws DerpwizardException{
+
+    //Move all of this into a validator class
+    String userId = accountLink.getUserId();
+    if(userId == null){
+      String error = "Missing required parameter 'userId'";
+      throw new DerpwizardException(error);
+    }
+    
+    String externalUserId = accountLink.getExternalUserId();
+    if(externalUserId == null){
+      String error = "Missing required parameter 'externalUserId'";
+      throw new DerpwizardException(error);
+    }
+    
+    String externalSystemName = accountLink.getExternalSystemName();
+    if(externalSystemName == null){
+      String error = "Missing required parameter 'externalSystemName'";
+      throw new DerpwizardException(error);
+    }
+    
+    return accountLinkingDAO.createAccountLink(accountLink);
   }
   
   public Response buildRedirect(String path, String reason){
@@ -277,5 +362,19 @@ public class AuthResource {
     } catch (URISyntaxException e) {
       return Response.serverError().entity("Unknown exception.").build();
     }
+  }
+  
+  public Map<String,ExternalAccountLink> accountLinksListToMap(List<ExternalAccountLink> accountLinks){
+    if(accountLinks == null){
+      return null;
+    }
+    
+    //This will malform any 1:n mappings of user-to-externalSystemName, but that shouldn't be allowed anyway
+    Map<String, ExternalAccountLink> accountLinksMap = new HashMap<String,ExternalAccountLink>();
+    for(ExternalAccountLink link : accountLinks){
+      accountLinksMap.put(link.getExternalSystemName(), link);
+    }
+    
+    return accountLinksMap;
   }
 }

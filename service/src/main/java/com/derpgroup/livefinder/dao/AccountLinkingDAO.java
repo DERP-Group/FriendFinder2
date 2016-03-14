@@ -1,5 +1,7 @@
 package com.derpgroup.livefinder.dao;
 
+import java.util.List;
+
 import com.derpgroup.livefinder.model.accountlinking.ExternalAccountLink;
 import com.derpgroup.livefinder.model.accountlinking.UserAccount;
 
@@ -26,4 +28,6 @@ public interface AccountLinkingDAO {
   public ExternalAccountLink getAccountLinkByUserIdAndExternalSystemName(String userId, String externalSystemName);
 
   public ExternalAccountLink getAccountLinkByExternalUserIdAndExternalSystemName(String externalUserId, String externalSystemName);
+
+  public List<ExternalAccountLink> getAccountLinksByUserId(String userId);
 }

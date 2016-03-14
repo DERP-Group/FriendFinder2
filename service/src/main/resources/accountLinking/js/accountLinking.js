@@ -12,6 +12,7 @@ var accessToken;
 var transparentRegistrationRequest;
 var mappingTokenRequest;
 var twitchRedirectUrl = "https://api.twitch.tv/kraken/oauth2/authorize?response_type=code&client_id=31yn7mmsohzw3pyrvere5biycw4wbv9&redirect_uri=http%3A%2F%2Ftwitch.oauth.derpgroup.com%3A9080%2Flivefinder%2Fauth%2Ftwitch&scope=user_read&state=";
+var userId;
 
 function init(){
 	//Grab token from query params
@@ -37,6 +38,7 @@ function redeemMappingTokenSuccess(response){
 	mappingTokenResponse = response;
 	setAccessToken(mappingTokenRequest.request.getResponseHeader('Access-Token'));
 	populateForm(response);
+	userId = response.userId;
 } 
 
 function redeemMappingTokenFailure(error, message){
@@ -46,11 +48,11 @@ function redeemMappingTokenFailure(error, message){
 }
 
 function populateForm(userAccount){
-	var steamId = userAccount.steamId;
-	var firstName = userAccount.firstName;
-	if(steamId){
-		qwery('#steamExternalId')[0].value = steamId;
+	var externalAccountLinks = userAccount.externalAccountLinks;
+	if(externalAccountLinks && externalAccountLinks.STEAM && externalAccountLinks.STEAM.externalUserId){
+		qwery('#steamExternalId')[0].value = userAccount.externalAccountLinks.STEAM.externalUserId;
 	}
+	var firstName = userAccount.firstName;
 	if(firstName){
 		qwery('#firstName')[0].value = firstName;
 	}
@@ -76,6 +78,11 @@ function updateUser(){
 	var firstName = qwery('#firstName')[0].value;
 	var steamId = qwery('#steamExternalId')[0].value;
 	var requestBody = {'firstName':firstName,'steamId':steamId};
+	var externalAccountLinks = {}
+	if(steamId){
+		externalAccountLinks.STEAM = {'userId':userId,'externalUserId':steamId,'externalSystemName':'STEAM'}
+		requestBody.externalAccountLinks = externalAccountLinks;
+	} 
 	
 	var requestHeaders = {};
 	requestHeaders.Authorization = accessToken;
@@ -123,6 +130,7 @@ function transparentRegistration(){
 
 function transparentRegistrationSuccess(response){
 	populateForm(response);
+	userId = response.userId;
 	qwery('#registrationSubmitButton')[0].style.display = 'block';
 	setAccessToken(transparentRegistrationRequest.request.getResponseHeader('Access-Token'));
 } 

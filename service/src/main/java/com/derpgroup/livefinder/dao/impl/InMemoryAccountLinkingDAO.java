@@ -2,6 +2,7 @@ package com.derpgroup.livefinder.dao.impl;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -117,6 +118,12 @@ public class InMemoryAccountLinkingDAO implements AccountLinkingDAO {
   @Override
   public ExternalAccountLink getAccountLinkByExternalUserIdAndExternalSystemName(
       String externalUserId, String externalSystemName) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public List<ExternalAccountLink> getAccountLinksByUserId(String userId) {
     // TODO Auto-generated method stub
     return null;
   }

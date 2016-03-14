@@ -1,5 +1,12 @@
 package com.derpgroup.livefinder.model.accountlinking;
 
+import java.util.List;
+import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+@JsonInclude(value = Include.NON_NULL)
 public class UserAccount {
 
   private String userId;
@@ -8,6 +15,7 @@ public class UserAccount {
   private String alexaId;
   private String firstName;
   private long dateCreated;
+  private Map<String,ExternalAccountLink> externalAccountLinks;
   
   public String getUserId() {
     return userId;
@@ -57,10 +65,20 @@ public class UserAccount {
     this.dateCreated = dateCreated;
   }
 
+  public Map<String, ExternalAccountLink> getExternalAccountLinks() {
+    return externalAccountLinks;
+  }
+
+  public void setExternalAccountLinks(
+      Map<String, ExternalAccountLink> externalAccountLinks) {
+    this.externalAccountLinks = externalAccountLinks;
+  }
+
   @Override
   public String toString() {
     return "UserAccount [userId=" + userId + ", twitchUser=" + twitchUser
         + ", steamId=" + steamId + ", alexaId=" + alexaId + ", firstName="
-        + firstName + ", dateCreated=" + dateCreated + "]";
+        + firstName + ", dateCreated=" + dateCreated
+        + ", externalAccountLinks=" + externalAccountLinks + "]";
   }
 }

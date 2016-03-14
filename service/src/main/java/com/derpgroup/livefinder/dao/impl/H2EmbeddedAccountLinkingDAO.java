@@ -5,6 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetProvider;
@@ -297,7 +299,7 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
     ArrayList<Object> parameters = new ArrayList<Object>();
     parameters.add(link.getUserId());
     parameters.add(link.getExternalUserId());
-    parameters.add(link.getInterfaceName().name());
+    parameters.add(link.getExternalSystemName());
     parameters.add(link.getAuthToken());
     String createAccountLink = "MERGE INTO AccountLink(userId, externalUserId, externalSystemName, externalSystemToken)"
         + " KEY(userId, externalUserId, externalSystemName) VALUES(?,?,?,?)";
@@ -305,7 +307,7 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
 
     executeStatement(createAccountLink, parameters);
     
-    return getAccountLinkByUserIdAndExternalSystemName(link.getUserId(), link.getInterfaceName().name());
+    return getAccountLinkByUserIdAndExternalSystemName(link.getUserId(), link.getExternalSystemName());
   }
   
   @Override
@@ -324,13 +326,8 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
       if(!response.next()){
         return null;
       }
-    
-      ExternalAccountLink link = new ExternalAccountLink();
-      link.setUserId(response.getString("userId"));
-      link.setExternalUserId(response.getString("externalUserId"));
-      link.setInterfaceName(InterfaceName.valueOf(response.getString("externalSystemName")));
-      link.setAuthToken(response.getString("externalSystemToken"));
-      return link;
+      
+      return buildAccountLink(response);
     }catch(SQLException e){
       e.printStackTrace();
       return null;
@@ -353,16 +350,47 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
       if(!response.next()){
         return null;
       }
-    
-      ExternalAccountLink link = new ExternalAccountLink();
-      link.setUserId(response.getString("userId"));
-      link.setExternalUserId(response.getString("externalUserId"));
-      link.setInterfaceName(InterfaceName.valueOf(response.getString("externalSystemName")));
-      link.setAuthToken(response.getString("externalSystemToken"));
-      return link;
+      
+      return buildAccountLink(response);
     }catch(SQLException e){
       e.printStackTrace();
       return null;
     }
+  }
+  
+  @Override
+  public List<ExternalAccountLink> getAccountLinksByUserId(String userId){
+    ArrayList<Object> parameters = new ArrayList<Object>();
+    parameters.add(userId);
+    String createAccountLink = "SELECT userId, externalUserId, externalSystemName, externalSystemToken"
+        + " FROM AccountLink"
+        + " WHERE userId = ?";
+
+    ResultSet response;
+    response = executeQuery(createAccountLink, parameters);
+    
+    List<ExternalAccountLink> externalAccountLinks = new LinkedList<ExternalAccountLink>();
+    try{
+      while(response.next()){
+        externalAccountLinks.add(buildAccountLink(response));
+      }
+    }catch(SQLException e){
+      e.printStackTrace();
+      return null;
+    }
+    
+    if(externalAccountLinks.size() < 1){
+      return null;
+    }
+    return externalAccountLinks;
+  }
+  
+  public ExternalAccountLink buildAccountLink(ResultSet rs) throws SQLException{
+    ExternalAccountLink link = new ExternalAccountLink();
+    link.setUserId(rs.getString("userId"));
+    link.setExternalUserId(rs.getString("externalUserId"));
+    link.setExternalSystemName(rs.getString("externalSystemName"));
+    link.setAuthToken(rs.getString("externalSystemToken"));
+    return link;
   }
 }
