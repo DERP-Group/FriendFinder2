@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import com.amazon.speech.json.SpeechletRequestEnvelope;
 import com.amazon.speech.json.SpeechletResponseEnvelope;
+import com.amazon.speech.speechlet.SpeechletRequest;
 import com.amazon.speech.speechlet.SpeechletResponse;
 import com.amazon.speech.ui.Card;
 import com.amazon.speech.ui.LinkAccountCard;
@@ -53,13 +54,12 @@ import com.amazon.speech.ui.SsmlOutputSpeech;
 import com.derpgroup.derpwizard.voice.exception.DerpwizardException;
 import com.derpgroup.derpwizard.voice.exception.DerpwizardExceptionAlexaWrapper;
 import com.derpgroup.derpwizard.voice.exception.DerpwizardException.DerpwizardExceptionReasons;
-import com.derpgroup.derpwizard.alexa.AlexaUtils;
+import com.derpgroup.derpwizard.voice.alexa.AlexaUtils;
 import com.derpgroup.derpwizard.voice.model.CommonMetadata;
 import com.derpgroup.derpwizard.voice.model.ServiceOutput;
 import com.derpgroup.derpwizard.voice.model.SsmlDocumentBuilder;
-import com.derpgroup.derpwizard.voice.model.VoiceInput;
-import com.derpgroup.derpwizard.voice.model.VoiceMessageFactory;
-import com.derpgroup.derpwizard.voice.model.VoiceMessageFactory.InterfaceType;
+import com.derpgroup.derpwizard.voice.model.ServiceInput;
+import com.derpgroup.derpwizard.voice.util.ConversationHistoryUtils;
 import com.derpgroup.livefinder.LiveFinderMetadata;
 import com.derpgroup.livefinder.MixInModule;
 import com.derpgroup.livefinder.configuration.MainConfig;
@@ -98,9 +98,7 @@ public class LiveFinderAlexaResource {
   public LiveFinderAlexaResource(MainConfig config, Environment env, AccountLinkingDAO accountLinkingDAO) {
     this.accountLinkingDAO = accountLinkingDAO;
     manager = new LiveFinderManager(accountLinkingDAO);
-    mapper = new ObjectMapper();
-    
-    mapper.registerModule(new MixInModule());
+    mapper = new ObjectMapper().registerModule(new MixInModule());
     
     linkingFlowHostname = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getLinkingFlowHostname();
     linkingFlowProtocol = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getLinkingFlowProtocol();
@@ -157,15 +155,28 @@ public class LiveFinderAlexaResource {
       CommonMetadata inputMetadata = mapper.convertValue(sessionAttributes, new TypeReference<LiveFinderMetadata>(){});
       outputMetadata = mapper.convertValue(sessionAttributes, new TypeReference<LiveFinderMetadata>(){});
 
-      // Build the ServiceOutput object, which gets updated within the service itself
+      ///////////////////////////////////
+      // Build the ServiceInput object //
+      ///////////////////////////////////
+      ServiceInput serviceInput = new ServiceInput();
+      serviceInput.setMetadata(inputMetadata);
+      Map<String, String> messageAsMap = AlexaUtils.getMessageAsMap(request.getRequest());
+      serviceInput.setMessageAsMap(messageAsMap);
+      
+      SpeechletRequest speechletRequest = (SpeechletRequest)request.getRequest();
+      String intent = AlexaUtils.getMessageSubject(speechletRequest);
+      serviceInput.setSubject(intent);
+      
+      ////////////////////////////////////
+      // Build the ServiceOutput object //
+      ////////////////////////////////////
       ServiceOutput serviceOutput = new ServiceOutput();
       serviceOutput.setMetadata(outputMetadata);
       serviceOutput.setConversationEnded(false);
-
-      VoiceInput voiceInput = VoiceMessageFactory.buildInputMessage(request.getRequest(), inputMetadata, InterfaceType.ALEXA);
+      ConversationHistoryUtils.registerRequestInConversationHistory(intent, messageAsMap, outputMetadata, outputMetadata.getConversationHistory());
       
       try{
-        manager.handleRequest(voiceInput, serviceOutput);
+        manager.handleRequest(serviceInput, serviceOutput);
       }catch(AccountLinkingNotLinkedException e){
         return doAccountUpdateSession(e.getInterfaceName(), outputMetadata, userId);
       }
@@ -175,10 +186,10 @@ public class LiveFinderAlexaResource {
       Reprompt reprompt = null;
       boolean shouldEndSession = false;
       
-      switch(voiceInput.getMessageType()){
-      case END_OF_CONVERSATION:
-      case STOP:
-      case CANCEL:
+      switch(serviceInput.getSubject()){
+      case "END_OF_CONVERSATION":
+      case "STOP":
+      case "CANCEL":
         outputSpeech = null;
         card = null;
         shouldEndSession = true;

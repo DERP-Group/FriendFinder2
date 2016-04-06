@@ -10,11 +10,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.derpgroup.derpwizard.manager.AbstractManager;
 import com.derpgroup.derpwizard.voice.exception.DerpwizardException;
 import com.derpgroup.derpwizard.voice.model.ServiceOutput;
 import com.derpgroup.derpwizard.voice.model.SsmlDocumentBuilder;
-import com.derpgroup.derpwizard.voice.model.VoiceInput;
+import com.derpgroup.derpwizard.voice.model.ServiceInput;
 import com.derpgroup.derpwizard.voice.util.ConversationHistoryUtils;
 import com.derpgroup.livefinder.LiveFinderMetadata;
 import com.derpgroup.livefinder.MixInModule;
@@ -36,7 +35,7 @@ import com.lukaspradel.steamapi.webapi.request.GetFriendListRequest;
 import com.lukaspradel.steamapi.webapi.request.GetPlayerSummariesRequest;
 import com.lukaspradel.steamapi.webapi.request.builders.SteamWebApiRequestFactory;
 
-public class LiveFinderManager extends AbstractManager {
+public class LiveFinderManager{
   private final Logger LOG = LoggerFactory.getLogger(LiveFinderManager.class);
   
   private static final String SERVICE_SLOT_NAME = "service";
@@ -70,8 +69,25 @@ public class LiveFinderManager extends AbstractManager {
     steamStateValues.put(6, "online and looking to play!");
   }
 
-  @Override
-  protected void doHelpRequest(VoiceInput voiceInput,
+  public void handleRequest(ServiceInput serviceInput,
+      ServiceOutput serviceOutput) throws DerpwizardException {
+    String messageSubject = serviceInput.getSubject();
+    
+    switch(messageSubject){
+    case "START_OF_CONVERSATION":
+      doHelloRequest(serviceInput, serviceOutput);
+      break;
+    case "FIND_BY_SERVICE":
+      findByService(serviceInput, serviceOutput);
+      break;
+      default:
+        String message = "Unknown request type '" + messageSubject + "'.";
+        LOG.warn(message);
+        throw new DerpwizardException(new SsmlDocumentBuilder().text(message).build().getSsml(), message, "Unknown request.");
+    }
+  }
+
+  protected void doHelpRequest(ServiceInput serviceInput,
       ServiceOutput serviceOutput) throws DerpwizardException {
     serviceOutput.setConversationEnded(false);
 
@@ -89,12 +105,11 @@ public class LiveFinderManager extends AbstractManager {
     serviceOutput.getVoiceOutput().setSsmltext(audioMessage);
   }
 
-  @Override
-  protected void doHelloRequest(VoiceInput voiceInput,
+  protected void doHelloRequest(ServiceInput serviceInput,
       ServiceOutput serviceOutput) throws DerpwizardException {
     serviceOutput.setConversationEnded(false);
 
-    UserAccount user = getUser(voiceInput,null);
+    UserAccount user = getUser(serviceInput,null);
     StringBuilder outputMessageBuilder = new StringBuilder();
     if(!StringUtils.isEmpty(user.getFirstName())){
       outputMessageBuilder.append("Hi " + user.getFirstName() + "! ");
@@ -106,39 +121,20 @@ public class LiveFinderManager extends AbstractManager {
     serviceOutput.getVoiceOutput().setSsmltext(outputMessage);
   }
 
-  @Override
-  protected void doGoodbyeRequest(VoiceInput voiceInput,
+  protected void doGoodbyeRequest(ServiceInput serviceInput,
       ServiceOutput serviceOutput) throws DerpwizardException {
   }
 
-  @Override
-  protected void doCancelRequest(VoiceInput voiceInput,
+  protected void doCancelRequest(ServiceInput serviceInput,
       ServiceOutput serviceOutput) throws DerpwizardException {
   }
 
-  @Override
-  protected void doStopRequest(VoiceInput voiceInput,
+  protected void doStopRequest(ServiceInput serviceInput,
       ServiceOutput serviceOutput) throws DerpwizardException {
-  }
-
-  @Override
-  protected void doConversationRequest(VoiceInput voiceInput,
-      ServiceOutput serviceOutput) throws DerpwizardException {
-    String messageSubject = voiceInput.getMessageSubject();
-    
-    switch(messageSubject){
-    case "FIND_BY_SERVICE":
-      findByService(voiceInput, serviceOutput);
-      break;
-      default:
-        String message = "Unknown request type '" + messageSubject + "'.";
-        LOG.warn(message);
-        throw new DerpwizardException(new SsmlDocumentBuilder().text(message).build().getSsml(), message, "Unknown request.");
-    }
   }
   
-  private void findByService(VoiceInput voiceInput, ServiceOutput serviceOutput) throws DerpwizardException{
-    Map<String,String> messageMap = voiceInput.getMessageAsMap();
+  private void findByService(ServiceInput serviceInput, ServiceOutput serviceOutput) throws DerpwizardException{
+    Map<String,String> messageMap = serviceInput.getMessageAsMap();
     if(messageMap == null || StringUtils.isEmpty(messageMap.get(SERVICE_SLOT_NAME))){
       String errorMessage = "Could not find by service, because service name was not provided.";
       LOG.warn(errorMessage);
@@ -148,10 +144,10 @@ public class LiveFinderManager extends AbstractManager {
     String service = messageMap.get("service").toLowerCase();
     switch(service){
     case "steam":
-      findSteamFriends(voiceInput, serviceOutput);
+      findSteamFriends(serviceInput, serviceOutput);
       break;
     case "twitch":
-      findTwitchStreams(voiceInput,serviceOutput);
+      findTwitchStreams(serviceInput,serviceOutput);
       break;
       default:
         String message = "Unknown service '" + service + "'.";
@@ -160,10 +156,10 @@ public class LiveFinderManager extends AbstractManager {
     }
   }
 
-  private void findSteamFriends(VoiceInput voiceInput, ServiceOutput serviceOutput) throws DerpwizardException{
+  private void findSteamFriends(ServiceInput serviceInput, ServiceOutput serviceOutput) throws DerpwizardException{
     steamClient = steamClientWrapper.getClient();
     
-    UserAccount user = getUser(voiceInput, InterfaceName.STEAM);
+    UserAccount user = getUser(serviceInput, InterfaceName.STEAM);
     
     List<String> friends = getListOfFriendIdsByUserId(user.getSteamId());
     
@@ -222,8 +218,8 @@ public class LiveFinderManager extends AbstractManager {
     return friends;
   }
   
-  private void findTwitchStreams(VoiceInput voiceInput, ServiceOutput serviceOutput) throws DerpwizardException {
-    UserAccount user = getUser(voiceInput, InterfaceName.TWITCH);
+  private void findTwitchStreams(ServiceInput serviceInput, ServiceOutput serviceOutput) throws DerpwizardException {
+    UserAccount user = getUser(serviceInput, InterfaceName.TWITCH);
     
     TwitchFollowedStreamsResponse response = null;
     try {
@@ -270,8 +266,8 @@ public class LiveFinderManager extends AbstractManager {
     serviceOutput.getVisualOutput().setTitle("Active Twitch Streams");
   }
 
-  public UserAccount getUser(VoiceInput voiceInput, InterfaceName interfaceName) throws DerpwizardException {
-    String userId = ((LiveFinderMetadata)voiceInput.getMetadata()).getUserId();
+  public UserAccount getUser(ServiceInput serviceInput, InterfaceName interfaceName) throws DerpwizardException {
+    String userId = ((LiveFinderMetadata)serviceInput.getMetadata()).getUserId();
     
     if(StringUtils.isEmpty(userId)){
       String message = "Missing userId.";
