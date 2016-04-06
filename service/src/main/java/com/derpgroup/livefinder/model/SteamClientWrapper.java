@@ -24,7 +24,7 @@ public class SteamClientWrapper {
   public synchronized void init(String apiKey){
     LOG.info("Initializing Steam Client.");
     if(initialized){
-      throw new RuntimeException("QuipStore is already initialized");
+      throw new RuntimeException("SteamClient is already initialized");
     }
     client = new SteamWebApiClient.SteamWebApiClientBuilder(apiKey).build();
     initialized = true;

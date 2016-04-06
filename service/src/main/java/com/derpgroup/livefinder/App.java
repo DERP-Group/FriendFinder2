@@ -21,14 +21,21 @@
 package com.derpgroup.livefinder;
 
 import io.dropwizard.Application;
+import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 
 import java.io.IOException;
 
 import com.derpgroup.livefinder.configuration.MainConfig;
+import com.derpgroup.livefinder.configuration.TwitchAccountLinkingConfig;
+import com.derpgroup.livefinder.dao.AccountLinkingDAO;
+import com.derpgroup.livefinder.dao.impl.H2EmbeddedAccountLinkingDAO;
+import com.derpgroup.livefinder.dao.impl.InMemoryAccountLinkingDAO;
 import com.derpgroup.livefinder.health.BasicHealthCheck;
 import com.derpgroup.livefinder.model.SteamClientWrapper;
+import com.derpgroup.livefinder.model.TwitchClientWrapper;
+import com.derpgroup.livefinder.resource.AuthResource;
 import com.derpgroup.livefinder.resource.LiveFinderAlexaResource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -46,7 +53,10 @@ public class App extends Application<MainConfig> {
   }
 
   @Override
-  public void initialize(Bootstrap<MainConfig> bootstrap) {}
+  public void initialize(Bootstrap<MainConfig> bootstrap) {
+    
+    bootstrap.addBundle(new AssetsBundle("/accountLinking", "/livefinder/accountLinking", "accountLinking.html"));
+  }
 
   @Override
   public void run(MainConfig config, Environment environment) throws IOException {
@@ -58,10 +68,21 @@ public class App extends Application<MainConfig> {
     // Health checks
     environment.healthChecks().register("basics", new BasicHealthCheck(config, environment));
 
-    // Resources
-    environment.jersey().register(new LiveFinderAlexaResource(config, environment));
+    // DAO
+//    AccountLinkingDAO accountLinkingDAO = new InMemoryAccountLinkingDAO();
+    AccountLinkingDAO accountLinkingDAO = new H2EmbeddedAccountLinkingDAO();
     
     SteamClientWrapper wrapper = SteamClientWrapper.getInstance();
     wrapper.init(config.getLiveFinderConfig().getApiKey());
+    TwitchClientWrapper twitchWrapper = TwitchClientWrapper.getInstance();
+    TwitchAccountLinkingConfig twitchConfig = config.getLiveFinderConfig().getTwitchAccountLinkingConfig();
+    twitchWrapper.init(twitchConfig.getTwitchApiRootUri()
+        ,twitchConfig.getClientId()
+        ,twitchConfig.getClientSecret()
+        ,twitchConfig.getRedirectUri());
+    
+    // Resources
+    environment.jersey().register(new LiveFinderAlexaResource(config, environment, accountLinkingDAO));
+    environment.jersey().register(new AuthResource(config, environment,accountLinkingDAO));
   }
 }

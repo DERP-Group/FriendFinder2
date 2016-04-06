@@ -38,7 +38,7 @@ public class MainConfig extends Configuration {
   
   @Valid
   @NotNull
-  private LiveFinderConfig friendFinderConfig;
+  private LiveFinderConfig liveFinderConfig;
 
   @JsonProperty
   public boolean isPrettyPrint() {
@@ -52,12 +52,12 @@ public class MainConfig extends Configuration {
 
   @JsonProperty
   public LiveFinderConfig getLiveFinderConfig() {
-    return friendFinderConfig;
+    return liveFinderConfig;
   }
 
   @JsonProperty
   public void setLiveFinderConfig(LiveFinderConfig friendFinderConfig) {
-    this.friendFinderConfig = friendFinderConfig;
+    this.liveFinderConfig = friendFinderConfig;
   }
   
 }

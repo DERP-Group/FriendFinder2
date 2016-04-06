@@ -10,15 +10,21 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.derpgroup.derpwizard.manager.AbstractManager;
 import com.derpgroup.derpwizard.voice.exception.DerpwizardException;
 import com.derpgroup.derpwizard.voice.model.ServiceOutput;
 import com.derpgroup.derpwizard.voice.model.SsmlDocumentBuilder;
-import com.derpgroup.derpwizard.voice.model.VoiceInput;
+import com.derpgroup.derpwizard.voice.model.ServiceInput;
 import com.derpgroup.derpwizard.voice.util.ConversationHistoryUtils;
+import com.derpgroup.livefinder.LiveFinderMetadata;
 import com.derpgroup.livefinder.MixInModule;
+import com.derpgroup.livefinder.dao.AccountLinkingDAO;
 import com.derpgroup.livefinder.model.SteamClientWrapper;
+import com.derpgroup.livefinder.model.TwitchClientWrapper;
 import com.derpgroup.livefinder.model.UserData;
+import com.derpgroup.livefinder.model.accountlinking.AccountLinkingNotLinkedException;
+import com.derpgroup.livefinder.model.accountlinking.UserAccount;
+import com.derpgroup.livefinder.model.accountlinking.AuthenticationException;
+import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
 import com.lukaspradel.steamapi.core.exception.SteamApiException;
 import com.lukaspradel.steamapi.data.json.friendslist.Friend;
 import com.lukaspradel.steamapi.data.json.friendslist.GetFriendList;
@@ -29,26 +35,31 @@ import com.lukaspradel.steamapi.webapi.request.GetFriendListRequest;
 import com.lukaspradel.steamapi.webapi.request.GetPlayerSummariesRequest;
 import com.lukaspradel.steamapi.webapi.request.builders.SteamWebApiRequestFactory;
 
-public class LiveFinderManager extends AbstractManager {
+public class LiveFinderManager{
   private final Logger LOG = LoggerFactory.getLogger(LiveFinderManager.class);
   
   private static final String SERVICE_SLOT_NAME = "service";
 
   private SteamWebApiClient steamClient;
   private static SteamClientWrapper steamClientWrapper;
+  private static TwitchClient twitchClient;
   private Map<Integer, String> steamStateValues;
+  
+  private AccountLinkingDAO accountLinkingDAO;
 
   static {
     steamClientWrapper = SteamClientWrapper.getInstance();
+    twitchClient = TwitchClientWrapper.getInstance().getClient();
   }
 
   static {
     ConversationHistoryUtils.getMapper().registerModule(new MixInModule());
   }
 
-  public LiveFinderManager() {
+  public LiveFinderManager(AccountLinkingDAO accountLinkingDAO) {
     super();
 
+    this.accountLinkingDAO = accountLinkingDAO;
     steamStateValues = new HashMap<Integer, String>();
     steamStateValues.put(1, "online.");
     steamStateValues.put(2, "online, but busy.");
@@ -58,66 +69,25 @@ public class LiveFinderManager extends AbstractManager {
     steamStateValues.put(6, "online and looking to play!");
   }
 
-  protected void doConversationRequest2(VoiceInput voiceInput,
-      SsmlDocumentBuilder builder) throws DerpwizardException {
-    steamClient = steamClientWrapper.getClient();
-
-    if (voiceInput.getMessageSubject().equals("STEAM_FRIENDS")) {
-      if (steamClient == null) {
-        String message = "Couldn't build Steam client.";
+  public void handleRequest(ServiceInput serviceInput,
+      ServiceOutput serviceOutput) throws DerpwizardException {
+    String messageSubject = serviceInput.getSubject();
+    
+    switch(messageSubject){
+    case "START_OF_CONVERSATION":
+      doHelloRequest(serviceInput, serviceOutput);
+      break;
+    case "FIND_BY_SERVICE":
+      findByService(serviceInput, serviceOutput);
+      break;
+      default:
+        String message = "Unknown request type '" + messageSubject + "'.";
         LOG.warn(message);
-        throw new DerpwizardException(new SsmlDocumentBuilder().text(message)
-            .build().getSsml(), message, "No Steam client.");
-      } else {
-        UserData data = getUserData("");
-        List<String> friends = getListOfFriendIdsByUserId(data);
-
-        GetPlayerSummariesRequest playerSummariesRequest = SteamWebApiRequestFactory
-            .createGetPlayerSummariesRequest(friends);
-        // List<String> onlineFriends = new LinkedList<String>();
-        Map<Integer, String> stateValues = new HashMap<Integer, String>();
-        stateValues.put(1, " is online.  ");
-        stateValues.put(2, " is online, but busy.  ");
-        stateValues.put(3, " is online, but away.  ");
-        stateValues.put(4, " is online, but snoozing.  ");
-        stateValues.put(5, " is online.  ");
-        stateValues.put(6, " is online and looking to play!  ");
-        try {
-          GetPlayerSummaries playerSummaries = steamClient
-              .<GetPlayerSummaries> processRequest(playerSummariesRequest);
-          for (Player player : playerSummaries.getResponse().getPlayers()) {
-            Integer state = player.getPersonastate();
-            if (state == null || state <= 0 || state >= 7) {
-              continue;
-            }
-            String username = player.getPersonaname();
-            builder.text(username + stateValues.get(state)).endSentence();
-          }
-        } catch (SteamApiException e) {
-          String message = "Unknown Steam exception '" + e.getMessage() + "'.";
-          LOG.warn(message);
-          throw new DerpwizardException(new SsmlDocumentBuilder().text(message)
-              .build().getSsml(), message, "Unknown Steam exception.");
-        }
-      }
-    } else {
-      String message = "Unknown request type '"
-          + voiceInput.getMessageSubject() + "'.";
-      LOG.warn(message);
-      throw new DerpwizardException(new SsmlDocumentBuilder().text(message)
-          .build().getSsml(), message, "Unknown request.");
+        throw new DerpwizardException(new SsmlDocumentBuilder().text(message).build().getSsml(), message, "Unknown request.");
     }
-
   }
 
-  private UserData getUserData(String string) {
-    UserData userData = new UserData();
-    userData.setSteamId("76561198019030536"); // Hardcoded to Eric's ID for now
-    return userData;
-  }
-
-  @Override
-  protected void doHelpRequest(VoiceInput voiceInput,
+  protected void doHelpRequest(ServiceInput serviceInput,
       ServiceOutput serviceOutput) throws DerpwizardException {
     serviceOutput.setConversationEnded(false);
 
@@ -135,50 +105,36 @@ public class LiveFinderManager extends AbstractManager {
     serviceOutput.getVoiceOutput().setSsmltext(audioMessage);
   }
 
-  @Override
-  protected void doHelloRequest(VoiceInput voiceInput,
+  protected void doHelloRequest(ServiceInput serviceInput,
       ServiceOutput serviceOutput) throws DerpwizardException {
     serviceOutput.setConversationEnded(false);
 
-    String outputMessage = "Who or what would you like me to find?";
+    UserAccount user = getUser(serviceInput,null);
+    StringBuilder outputMessageBuilder = new StringBuilder();
+    if(!StringUtils.isEmpty(user.getFirstName())){
+      outputMessageBuilder.append("Hi " + user.getFirstName() + "! ");
+    }
+    outputMessageBuilder.append("Who or what would you like me to find?");
+    String outputMessage = outputMessageBuilder.toString();
     serviceOutput.getVisualOutput().setTitle("Hello...");
     serviceOutput.getVisualOutput().setText(outputMessage);
     serviceOutput.getVoiceOutput().setSsmltext(outputMessage);
   }
 
-  @Override
-  protected void doGoodbyeRequest(VoiceInput voiceInput,
+  protected void doGoodbyeRequest(ServiceInput serviceInput,
       ServiceOutput serviceOutput) throws DerpwizardException {
   }
 
-  @Override
-  protected void doCancelRequest(VoiceInput voiceInput,
+  protected void doCancelRequest(ServiceInput serviceInput,
       ServiceOutput serviceOutput) throws DerpwizardException {
   }
 
-  @Override
-  protected void doStopRequest(VoiceInput voiceInput,
+  protected void doStopRequest(ServiceInput serviceInput,
       ServiceOutput serviceOutput) throws DerpwizardException {
-  }
-
-  @Override
-  protected void doConversationRequest(VoiceInput voiceInput,
-      ServiceOutput serviceOutput) throws DerpwizardException {
-    String messageSubject = voiceInput.getMessageSubject();
-    
-    switch(messageSubject){
-    case "FIND_BY_SERVICE":
-      findByService(voiceInput, serviceOutput);
-      break;
-      default:
-        String message = "Unknown request type '" + messageSubject + "'.";
-        LOG.warn(message);
-        throw new DerpwizardException(new SsmlDocumentBuilder().text(message).build().getSsml(), message, "Unknown request.");
-    }
   }
   
-  private void findByService(VoiceInput voiceInput, ServiceOutput serviceOutput) throws DerpwizardException{
-    Map<String,String> messageMap = voiceInput.getMessageAsMap();
+  private void findByService(ServiceInput serviceInput, ServiceOutput serviceOutput) throws DerpwizardException{
+    Map<String,String> messageMap = serviceInput.getMessageAsMap();
     if(messageMap == null || StringUtils.isEmpty(messageMap.get(SERVICE_SLOT_NAME))){
       String errorMessage = "Could not find by service, because service name was not provided.";
       LOG.warn(errorMessage);
@@ -188,20 +144,24 @@ public class LiveFinderManager extends AbstractManager {
     String service = messageMap.get("service").toLowerCase();
     switch(service){
     case "steam":
-      findSteamFriends(voiceInput, serviceOutput);
+      findSteamFriends(serviceInput, serviceOutput);
+      break;
+    case "twitch":
+      findTwitchStreams(serviceInput,serviceOutput);
       break;
       default:
         String message = "Unknown service '" + service + "'.";
         LOG.warn(message);
         throw new DerpwizardException(new SsmlDocumentBuilder().text(message).build().getSsml(), message, message);
     }
-    
   }
-  
-  private void findSteamFriends(VoiceInput voiceInput, ServiceOutput serviceOutput) throws DerpwizardException{
+
+  private void findSteamFriends(ServiceInput serviceInput, ServiceOutput serviceOutput) throws DerpwizardException{
     steamClient = steamClientWrapper.getClient();
-    UserData data = getUserData("");
-    List<String> friends = getListOfFriendIdsByUserId(data);
+    
+    UserAccount user = getUser(serviceInput, InterfaceName.STEAM);
+    
+    List<String> friends = getListOfFriendIdsByUserId(user.getSteamId());
     
     GetPlayerSummaries playerSummaries;
     try {
@@ -242,8 +202,8 @@ public class LiveFinderManager extends AbstractManager {
     }
   }
 
-  public List<String> getListOfFriendIdsByUserId(UserData data) throws DerpwizardException {
-    GetFriendListRequest friendListRequest = SteamWebApiRequestFactory.createGetFriendListRequest(data.getSteamId());
+  public List<String> getListOfFriendIdsByUserId(String steamId) throws DerpwizardException {
+    GetFriendListRequest friendListRequest = SteamWebApiRequestFactory.createGetFriendListRequest(steamId);
     List<String> friends = new LinkedList<String>();
     try {
       GetFriendList friendList = steamClient.<GetFriendList> processRequest(friendListRequest);
@@ -256,6 +216,76 @@ public class LiveFinderManager extends AbstractManager {
       throw new DerpwizardException(new SsmlDocumentBuilder().text(message).build().getSsml(), message, "Unknown Steam exception.");
     }
     return friends;
+  }
+  
+  private void findTwitchStreams(ServiceInput serviceInput, ServiceOutput serviceOutput) throws DerpwizardException {
+    UserAccount user = getUser(serviceInput, InterfaceName.TWITCH);
+    
+    TwitchFollowedStreamsResponse response = null;
+    try {
+      response = twitchClient.getFollowedStreams(user.getTwitchUser().getAuthToken());
+    } catch (AuthenticationException e) {
+      String message = "Unknown Twitch exception '" + e.getMessage() + "'.";
+      LOG.warn(message);
+      throw new DerpwizardException(new SsmlDocumentBuilder().text(message).build().getSsml(), message, message);
+    }
+    if(response == null){
+      String message = "Twitch did not return a valid list of streams.";
+      LOG.warn(message);
+      throw new DerpwizardException(new SsmlDocumentBuilder().text(message).build().getSsml(), message, message);
+    }else if(response.getStreams() == null || response.getStreams().length < 1){
+      String message = "None of the streams you follow are currently live.";
+      LOG.warn(message);
+      throw new DerpwizardException(new SsmlDocumentBuilder().text(message).build().getSsml(), message, message);
+    }
+    
+    StringBuilder visualText = new StringBuilder();
+    visualText.append("Current live streams:");
+    StringBuilder voiceOutput = new StringBuilder();
+    voiceOutput.append("Current <phoneme alphabet=\"ipa\" ph=\"laɪv\">live</phoneme> streams. <break time=\"500ms\" />");
+    for(TwitchStream stream : response.getStreams()){
+      if(stream.getChannel() == null || stream.getChannel().getDisplayName() == null){
+        LOG.warn("No valid channel object for stream '" + stream.getId() + "'.");
+        continue;
+      }
+      if(stream.getLinks() == null || stream.getLinks().getSelf() == null){
+        LOG.warn("No valid self link object for stream '" + stream.getId() + "'.");
+        continue;
+      }
+      
+      voiceOutput.append("<break time=\"500ms\" />");
+      voiceOutput.append(stream.getChannel().getDisplayName());
+      visualText.append("\n\n");
+      visualText.append(stream.getChannel().getDisplayName());
+      visualText.append("\n");
+      visualText.append(stream.getChannel().getUrl());
+    }
+    
+    serviceOutput.getVoiceOutput().setSsmltext(voiceOutput.toString());
+    serviceOutput.getVisualOutput().setText(visualText.toString());
+    serviceOutput.getVisualOutput().setTitle("Active Twitch Streams");
+  }
+
+  public UserAccount getUser(ServiceInput serviceInput, InterfaceName interfaceName) throws DerpwizardException {
+    String userId = ((LiveFinderMetadata)serviceInput.getMetadata()).getUserId();
+    
+    if(StringUtils.isEmpty(userId)){
+      String message = "Missing userId.";
+      LOG.error(message);
+      throw new DerpwizardException(message);
+    }
+    
+    UserAccount user = accountLinkingDAO.getUserByUserId(userId);
+    if(user == null){
+      throw new AccountLinkingNotLinkedException(interfaceName);
+    }
+    if(interfaceName == InterfaceName.STEAM && StringUtils.isEmpty(user.getSteamId())){
+      throw new AccountLinkingNotLinkedException(interfaceName);
+    }
+    if(interfaceName == InterfaceName.TWITCH && user.getTwitchUser() == null){
+      throw new AccountLinkingNotLinkedException(interfaceName);
+    }
+    return user;
   }
 
 }

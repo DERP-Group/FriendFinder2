@@ -1,0 +1,13 @@
+{
+  "intents": [
+    {
+      "intent": "FIND_BY_SERVICE",
+      "slots": [
+        {
+          "name":"service",
+          "type":"SERVICE"
+        }
+      ]
+    }
+  ]
+}

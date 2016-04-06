@@ -1,6 +1,20 @@
 {
   "liveFinderConfig":{
-    "apiKey":"9E5D61DD0D1A99F0235D91B1139A163B"
+    "apiKey":"9E5D61DD0D1A99F0235D91B1139A163B",
+    "steamAccountLinkingConfig":{
+      "linkingFlowProtocol":"http",
+      "successPagePath":"/steamredirectsuccess.html",
+      "errorPagePath":"/steamredirecterror.html",
+      "landingPagePath":"/livefinder/accountLinking/index.html"
+    },
+    "twitchAccountLinkingConfig":{
+      "twitchApiRootUri":"https://api.twitch.tv/kraken",
+      "clientId":"31yn7mmsohzw3pyrvere5biycw4wbv9",
+      "redirectUri":"http://twitch.oauth.derpgroup.com:9080/livefinder/auth/twitch"
+    },
+    "alexaAccountLinkingConfig":{
+      "alexaRedirectPath":"https://pitangui.amazon.com/spa/skill/account-linking-status.html?vendorId=M1IOYIOXZFQCCS"
+    }
   },
   "server": {
     "applicationConnectors": [
@@ -33,11 +47,6 @@
         "archivedFileCount": 5
       }
     ],
-    "level": "INFO",
-    "loggers": {
-      "com": {
-        "derpgroup": "DEBUG"
-      }
-    }
+    "level": "INFO"
   }
 }

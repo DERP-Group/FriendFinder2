@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 public class MixInModule extends SimpleModule {
   
   public MixInModule(){
-    super("QuipModule"); 
+    super("LiveFinderModule"); 
   }
   
   @Override

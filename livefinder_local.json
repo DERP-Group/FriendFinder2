@@ -1,6 +1,21 @@
 {
   "liveFinderConfig":{
-    "apiKey":"9E5D61DD0D1A99F0235D91B1139A163B"
+    "apiKey":"9E5D61DD0D1A99F0235D91B1139A163B",
+    "steamAccountLinkingConfig":{
+      "linkingFlowHostname":"derpgroup.com",
+      "linkingFlowProtocol":"http",
+      "successPagePath":"/steamredirectsuccess.html",
+      "errorPagePath":"/steamredirecterror.html",
+      "landingPagePath":"/livefinder/accountLinking/index.html"
+    },
+    "twitchAccountLinkingConfig":{
+      "twitchApiRootUri":"https://api.twitch.tv/kraken",
+      "clientId":"31yn7mmsohzw3pyrvere5biycw4wbv9",
+      "redirectUri":"http://twitch.oauth.derpgroup.com:9080/livefinder/auth/twitch"
+    },
+    "alexaAccountLinkingConfig":{
+      "alexaRedirectPath":"/authGrantRedirect.html"
+    }
   },
   "server": {
     "applicationConnectors": [
