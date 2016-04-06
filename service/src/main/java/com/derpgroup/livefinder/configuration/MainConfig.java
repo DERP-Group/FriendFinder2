@@ -39,6 +39,10 @@ public class MainConfig extends Configuration {
   @Valid
   @NotNull
   private LiveFinderConfig liveFinderConfig;
+  
+  @Valid
+  @NotNull
+  private DAOConfig daoConfig;
 
   @JsonProperty
   public boolean isPrettyPrint() {
@@ -58,6 +62,16 @@ public class MainConfig extends Configuration {
   @JsonProperty
   public void setLiveFinderConfig(LiveFinderConfig friendFinderConfig) {
     this.liveFinderConfig = friendFinderConfig;
+  }
+
+  @JsonProperty
+  public DAOConfig getDaoConfig() {
+    return daoConfig;
+  }
+
+  @JsonProperty
+  public void setDaoConfig(DAOConfig daoConfig) {
+    this.daoConfig = daoConfig;
   }
   
 }

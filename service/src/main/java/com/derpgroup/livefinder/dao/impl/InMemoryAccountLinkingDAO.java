@@ -10,6 +10,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.derpgroup.livefinder.configuration.AccountLinkingDAOConfig;
 import com.derpgroup.livefinder.dao.AccountLinkingDAO;
 import com.derpgroup.livefinder.model.accountlinking.UserAccount;
 import com.derpgroup.livefinder.model.accountlinking.ExternalAccountLink;
@@ -24,7 +25,7 @@ public class InMemoryAccountLinkingDAO implements AccountLinkingDAO {
   Map<String,String> mappingTokens;
   Map<String,String> grantedAuthTokens; //Map of token->derpUserId for tokens we have given out
   
-  public InMemoryAccountLinkingDAO(){
+  public InMemoryAccountLinkingDAO(AccountLinkingDAOConfig config){
     users = new HashMap<String,UserAccount>();
     mappingTokens = new HashMap<String,String>();
     grantedAuthTokens = new HashMap<String,String>();

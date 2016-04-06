@@ -7,6 +7,7 @@ import static org.junit.Assert.assertNull;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 
 import org.junit.Before;
@@ -14,6 +15,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.After;
 
+import com.derpgroup.livefinder.configuration.AccountLinkingDAOConfig;
 import com.derpgroup.livefinder.model.accountlinking.ExternalAccountLink;
 import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
 import com.derpgroup.livefinder.model.accountlinking.UserAccount;
@@ -22,17 +24,24 @@ import com.derpgroup.livefinder.model.accountlinking.UserAccount;
 public class H2EmbeddedAccountLinkingDAOTest {
 
   private H2EmbeddedAccountLinkingDAO dao;
+  private AccountLinkingDAOConfig accountLinkingDAOConfig;
   
   @Before
   public void setup() throws SQLException{
-    dao = new H2EmbeddedAccountLinkingDAO();
+    HashMap<String,Object> properties = new HashMap<String,Object>();
+    properties.put("url", "jdbc:h2:mem:");
+    properties.put("user", "sa");
+    properties.put("password", "sa");
+    accountLinkingDAOConfig = new AccountLinkingDAOConfig();
+    accountLinkingDAOConfig.setProperties(properties);
+    dao = new H2EmbeddedAccountLinkingDAO(accountLinkingDAOConfig);
     dao.init();
   }
   
   @Test
   public void testInit() throws SQLException{
     dao.shutdown();
-    dao = new H2EmbeddedAccountLinkingDAO();
+    dao = new H2EmbeddedAccountLinkingDAO(accountLinkingDAOConfig);
     dao.init();
   }
   
