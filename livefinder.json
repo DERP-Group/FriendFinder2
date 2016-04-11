@@ -16,6 +16,16 @@
       "alexaRedirectPath":"https://pitangui.amazon.com/spa/skill/account-linking-status.html?vendorId=M1IOYIOXZFQCCS"
     }
   },
+  "daoConfig":{
+    "accountLinking":{
+      "type":"H2",
+      "properties":{
+        "url":"jdbc:h2:mem:",
+        "user":"sa",
+        "password":"sa"
+      }
+    }
+  },
   "server": {
     "applicationConnectors": [
       {

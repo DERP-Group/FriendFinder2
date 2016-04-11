@@ -7,12 +7,14 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetProvider;
 
 import org.h2.jdbcx.JdbcDataSource;
 
+import com.derpgroup.livefinder.configuration.AccountLinkingDAOConfig;
 import com.derpgroup.livefinder.dao.AccountLinkingDAO;
 import com.derpgroup.livefinder.model.accountlinking.ExternalAccountLink;
 import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
@@ -23,11 +25,18 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
   private Connection conn;
   private JdbcDataSource ds;
   
-  public H2EmbeddedAccountLinkingDAO(){
+  public H2EmbeddedAccountLinkingDAO(AccountLinkingDAOConfig config){
+    if(config == null || config.getProperties() == null){
+      throw new RuntimeException("Could not initialize DAO due to missing configuration.");
+    }
+    Map<String,Object> daoConfiguration = config.getProperties();
+    if(daoConfiguration.get("url") == null || daoConfiguration.get("user") == null || daoConfiguration.get("password") == null ){
+      throw new RuntimeException("Could not initialize DAO due to missing property.");
+    }
     ds = new JdbcDataSource();
-    ds.setURL("jdbc:h2:mem:");
-    ds.setUser("sa");
-    ds.setPassword("sa");
+    ds.setURL(String.valueOf(daoConfiguration.get("url")));
+    ds.setUser(String.valueOf(daoConfiguration.get("user")));
+    ds.setPassword(String.valueOf(daoConfiguration.get("password")));
     try {
       init();
     } catch (SQLException e) {

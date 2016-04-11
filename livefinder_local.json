@@ -17,6 +17,16 @@
       "alexaRedirectPath":"/authGrantRedirect.html"
     }
   },
+  "daoConfig":{
+    "accountLinking":{
+      "type":"H2",
+      "properties":{
+        "url":"jdbc:h2:mem:",
+        "user":"sa",
+        "password":"sa"
+      }
+    }
+  },
   "server": {
     "applicationConnectors": [
       {
