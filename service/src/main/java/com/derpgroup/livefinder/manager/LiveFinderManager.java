@@ -271,7 +271,12 @@ public class LiveFinderManager{
   
   public ExternalAccountLink getExternalAccountLink(String userId, InterfaceName interfaceName) throws AccountLinkingNotLinkedException{
     ExternalAccountLink accountLink = accountLinkingDAO.getAccountLinkByUserIdAndExternalSystemName(userId, interfaceName.name());
-    if(accountLink == null || StringUtils.isEmpty(accountLink.getExternalUserId())){
+    if(accountLink == null){
+      LOG.info("No account link found for userId '" + userId + "' and externalSystemName '" + interfaceName.name() + "'.");
+      throw new AccountLinkingNotLinkedException(interfaceName);
+    }else if(StringUtils.isEmpty(accountLink.getExternalUserId()) && StringUtils.isEmpty(accountLink.getAuthToken())){
+      LOG.info("Account link was missing required fields.");
+      LOG.info(accountLink.toString());
       throw new AccountLinkingNotLinkedException(interfaceName);
     }
     return accountLink;

@@ -6,6 +6,7 @@ public class ExternalAccountLink {
   private String externalUserId;
   private String externalSystemName;
   private String authToken;
+  private String refreshToken;
   
   public String getUserId() {
     return userId;
@@ -39,10 +40,18 @@ public class ExternalAccountLink {
     this.authToken = authToken;
   }
 
+  public String getRefreshToken() {
+    return refreshToken;
+  }
+
+  public void setRefreshToken(String refreshToken) {
+    this.refreshToken = refreshToken;
+  }
+
   @Override
   public String toString() {
     return "ExternalAccountLink [userId=" + userId + ", externalUserId="
         + externalUserId + ", externalSystemName=" + externalSystemName
-        + ", authToken=" + authToken + "]";
+        + ", authToken=" + authToken + ", refreshToken=" + refreshToken + "]";
   }
 }

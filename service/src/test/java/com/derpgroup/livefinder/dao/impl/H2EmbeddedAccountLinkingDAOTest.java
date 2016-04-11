@@ -176,6 +176,7 @@ public class H2EmbeddedAccountLinkingDAOTest {
     accountLink.setExternalUserId("1234");
     accountLink.setExternalSystemName("ALEXA");
     accountLink.setAuthToken("qwerty");
+    accountLink.setRefreshToken("asdf");
     
     ExternalAccountLink accountLinkRetrieved = dao.createAccountLink(accountLink);
     
@@ -190,6 +191,7 @@ public class H2EmbeddedAccountLinkingDAOTest {
     accountLinkToCreate.setExternalUserId("1234");
     accountLinkToCreate.setExternalSystemName("ALEXA");
     accountLinkToCreate.setAuthToken("qwerty");
+    accountLinkToCreate.setRefreshToken("asdf");
     
     dao.createAccountLink(accountLinkToCreate);
     
@@ -203,12 +205,28 @@ public class H2EmbeddedAccountLinkingDAOTest {
   }
   
   @Test
+  public void testRetrieveAccountLink_noExternalUserId(){
+    ExternalAccountLink accountLinkToCreate = new ExternalAccountLink();
+    accountLinkToCreate.setUserId("asdf");
+    accountLinkToCreate.setExternalSystemName("ALEXA");
+    accountLinkToCreate.setAuthToken("qwerty");
+    
+    dao.createAccountLink(accountLinkToCreate);
+    
+    ExternalAccountLink accountLinkRetrieved = dao.getAccountLinkByUserIdAndExternalSystemName(
+        accountLinkToCreate.getUserId(), accountLinkToCreate.getExternalSystemName());
+    
+    validateAccountLinksEqual(accountLinkRetrieved, accountLinkToCreate);
+  }
+  
+  @Test
   public void testRetrieveAllLinks(){
     ExternalAccountLink accountLink1 = new ExternalAccountLink();
     accountLink1.setUserId("userId1");
     accountLink1.setExternalUserId("externalUserId1");
     accountLink1.setExternalSystemName("ALEXA");
     accountLink1.setAuthToken("qwerty");
+    accountLink1.setRefreshToken("asdf");
     
     dao.createAccountLink(accountLink1);
     
@@ -217,6 +235,7 @@ public class H2EmbeddedAccountLinkingDAOTest {
     accountLink2.setExternalUserId("externalUserId2");
     accountLink2.setExternalSystemName("STEAM");
     accountLink2.setAuthToken("qwerty");
+    accountLink2.setRefreshToken("asdf");
     
     dao.createAccountLink(accountLink2);
     
@@ -256,6 +275,7 @@ public class H2EmbeddedAccountLinkingDAOTest {
     assertNotNull(accountLink.getExternalUserId());
     assertNotNull(accountLink.getExternalSystemName());
     assertNotNull(accountLink.getAuthToken());
+    assertNotNull(accountLink.getRefreshToken());
   }
   
   public void validateAccountLinksEqual(ExternalAccountLink accountLink1, ExternalAccountLink accountLink2){
@@ -263,6 +283,7 @@ public class H2EmbeddedAccountLinkingDAOTest {
     assertEquals(accountLink1.getExternalUserId(), accountLink2.getExternalUserId());
     assertEquals(accountLink1.getExternalSystemName(), accountLink2.getExternalSystemName());
     assertEquals(accountLink1.getAuthToken(), accountLink2.getAuthToken());
+    assertEquals(accountLink1.getRefreshToken(), accountLink2.getRefreshToken());
   }
   
   @After

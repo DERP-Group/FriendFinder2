@@ -118,9 +118,10 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
     
     String accountLinkTableCreation = "CREATE TABLE AccountLink("
         + "userId varchar(255) NOT NULL,"
-        + "externalUserId varchar(255) NOT NULL,"
+        + "externalUserId varchar(255) NULL,"
         + "externalSystemName varchar(64) NOT NULL,"
-        + "externalSystemToken varchar(255) NULL"
+        + "externalSystemToken varchar(255) NULL,"
+        + "externalSystemRefreshToken varchar(255) NULL"
         + ");";
     executeStatement(accountLinkTableCreation);
     
@@ -309,8 +310,9 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
     parameters.add(link.getExternalUserId());
     parameters.add(link.getExternalSystemName());
     parameters.add(link.getAuthToken());
-    String createAccountLink = "MERGE INTO AccountLink(userId, externalUserId, externalSystemName, externalSystemToken)"
-        + " KEY(userId, externalUserId, externalSystemName) VALUES(?,?,?,?)";
+    parameters.add(link.getRefreshToken());
+    String createAccountLink = "MERGE INTO AccountLink(userId, externalUserId, externalSystemName, externalSystemToken, externalSystemRefreshToken)"
+        + " KEY(userId, externalUserId, externalSystemName) VALUES(?,?,?,?,?)";
     //Should externalSystemToken be a different table with a FK relationship to this one?
 
     executeStatement(createAccountLink, parameters);
@@ -323,7 +325,7 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
     ArrayList<Object> parameters = new ArrayList<Object>();
     parameters.add(userId);
     parameters.add(externalSystemName);
-    String createAccountLink = "SELECT userId, externalUserId, externalSystemName, externalSystemToken"
+    String createAccountLink = "SELECT userId, externalUserId, externalSystemName, externalSystemToken, externalSystemRefreshToken"
         + " FROM AccountLink"
         + " WHERE userId = ?"
         + " AND externalSystemName = ?";
@@ -347,7 +349,7 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
     ArrayList<Object> parameters = new ArrayList<Object>();
     parameters.add(externalUserId);
     parameters.add(externalSystemName);
-    String createAccountLink = "SELECT userId, externalUserId, externalSystemName, externalSystemToken"
+    String createAccountLink = "SELECT userId, externalUserId, externalSystemName, externalSystemToken, externalSystemRefreshToken"
         + " FROM AccountLink"
         + " WHERE externalUserId = ?"
         + " AND externalSystemName = ?";
@@ -370,7 +372,7 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
   public List<ExternalAccountLink> getAccountLinksByUserId(String userId){
     ArrayList<Object> parameters = new ArrayList<Object>();
     parameters.add(userId);
-    String createAccountLink = "SELECT userId, externalUserId, externalSystemName, externalSystemToken"
+    String createAccountLink = "SELECT userId, externalUserId, externalSystemName, externalSystemToken, externalSystemRefreshToken"
         + " FROM AccountLink"
         + " WHERE userId = ?";
 
@@ -399,6 +401,7 @@ public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
     link.setExternalUserId(rs.getString("externalUserId"));
     link.setExternalSystemName(rs.getString("externalSystemName"));
     link.setAuthToken(rs.getString("externalSystemToken"));
+    link.setRefreshToken(rs.getString("externalSystemRefreshToken"));
     return link;
   }
 }
