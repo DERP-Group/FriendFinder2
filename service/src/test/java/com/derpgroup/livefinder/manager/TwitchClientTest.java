@@ -6,7 +6,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.derpgroup.livefinder.model.accountlinking.AuthenticationException;
+import com.derpgroup.derpwizard.model.accountlinking.AuthenticationException;
 
 public class TwitchClientTest {
 

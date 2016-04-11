@@ -45,17 +45,17 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.derpgroup.derpwizard.dao.AccountLinkingDAO;
+import com.derpgroup.derpwizard.model.accountlinking.AuthenticationException;
+import com.derpgroup.derpwizard.model.accountlinking.ExternalAccountLink;
+import com.derpgroup.derpwizard.model.accountlinking.UserAccount;
 import com.derpgroup.derpwizard.voice.exception.DerpwizardException;
 import com.derpgroup.livefinder.configuration.MainConfig;
-import com.derpgroup.livefinder.dao.AccountLinkingDAO;
 import com.derpgroup.livefinder.manager.TwitchClient;
 import com.derpgroup.livefinder.manager.TwitchTokenResponse;
 import com.derpgroup.livefinder.manager.TwitchUserResponse;
 import com.derpgroup.livefinder.model.TwitchClientWrapper;
-import com.derpgroup.livefinder.model.accountlinking.ExternalAccountLink;
 import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
-import com.derpgroup.livefinder.model.accountlinking.UserAccount;
-import com.derpgroup.livefinder.model.accountlinking.AuthenticationException;
 import com.derpgroup.livefinder.model.accountlinking.TwitchUser;
 
 /**
@@ -140,12 +140,6 @@ public class AuthResource {
     if(externalId == null){
       String error = "Missing required parameter 'externalId'";
       return Response.status(Response.Status.BAD_REQUEST).entity(new AuthenticationException(error)).build();
-    }
-    
-    if(user.getSteamId() == null){
-      LOG.info("User '" + user.getUserId() + "' has no steamId; setting for the first time to '" + externalId + "'.");
-    }else{
-      LOG.info("User '" + user.getUserId() + "' had steamId '" + user.getSteamId() + "'; updating to '" + externalId + "'.");
     }
     
     ExternalAccountLink accountLink = new ExternalAccountLink();
@@ -256,15 +250,10 @@ public class AuthResource {
       return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
     }
     
-    TwitchUser twitchUser = new TwitchUser();
-    twitchUser.setAuthToken(tokenResponse.getAccessToken());
-    twitchUser.setRefreshToken(tokenResponse.getRefreshToken());
-    twitchUser.setName(userResponse.getDisplayName());
-    user.setTwitchUser(twitchUser);
-    
     ExternalAccountLink accountLink = new ExternalAccountLink();
     accountLink.setUserId(user.getUserId());
     accountLink.setExternalSystemName(InterfaceName.TWITCH.name());
+    accountLink.setExternalUserId(userResponse.getId());
     accountLink.setAuthToken(tokenResponse.getAccessToken());
     accountLink.setRefreshToken(tokenResponse.getRefreshToken());
     

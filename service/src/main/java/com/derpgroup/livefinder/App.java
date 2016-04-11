@@ -27,13 +27,12 @@ import io.dropwizard.setup.Environment;
 
 import java.io.IOException;
 
-import com.derpgroup.livefinder.configuration.AccountLinkingDAOConfig;
+import com.derpgroup.derpwizard.configuration.AccountLinkingDAOConfig;
+import com.derpgroup.derpwizard.dao.AccountLinkingDAO;
+import com.derpgroup.derpwizard.dao.impl.AccountLinkingDAOFactory;
+import com.derpgroup.derpwizard.dao.impl.H2EmbeddedAccountLinkingDAO;
 import com.derpgroup.livefinder.configuration.MainConfig;
 import com.derpgroup.livefinder.configuration.TwitchAccountLinkingConfig;
-import com.derpgroup.livefinder.dao.AccountLinkingDAO;
-import com.derpgroup.livefinder.dao.impl.AccountLinkingDAOFactory;
-import com.derpgroup.livefinder.dao.impl.H2EmbeddedAccountLinkingDAO;
-import com.derpgroup.livefinder.dao.impl.InMemoryAccountLinkingDAO;
 import com.derpgroup.livefinder.health.BasicHealthCheck;
 import com.derpgroup.livefinder.model.SteamClientWrapper;
 import com.derpgroup.livefinder.model.TwitchClientWrapper;

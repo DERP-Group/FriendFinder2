@@ -4,7 +4,7 @@ import java.util.Map;
 
 import org.junit.Before;
 
-import com.derpgroup.livefinder.model.accountlinking.ExternalAccountLink;
+import com.derpgroup.derpwizard.model.accountlinking.ExternalAccountLink;
 
 public class ExternalAccountLinkBiMapTest {
 

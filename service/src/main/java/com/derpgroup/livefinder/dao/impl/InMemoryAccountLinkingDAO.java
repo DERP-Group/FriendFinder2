@@ -1,21 +1,17 @@
 package com.derpgroup.livefinder.dao.impl;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.derpgroup.livefinder.configuration.AccountLinkingDAOConfig;
-import com.derpgroup.livefinder.dao.AccountLinkingDAO;
-import com.derpgroup.livefinder.model.accountlinking.UserAccount;
-import com.derpgroup.livefinder.model.accountlinking.ExternalAccountLink;
-import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
-import com.derpgroup.livefinder.model.accountlinking.TwitchUser;
+import com.derpgroup.derpwizard.configuration.AccountLinkingDAOConfig;
+import com.derpgroup.derpwizard.dao.AccountLinkingDAO;
+import com.derpgroup.derpwizard.model.accountlinking.ExternalAccountLink;
+import com.derpgroup.derpwizard.model.accountlinking.UserAccount;
 
 public class InMemoryAccountLinkingDAO implements AccountLinkingDAO {
   
