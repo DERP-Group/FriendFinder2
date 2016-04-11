@@ -22,6 +22,7 @@ import com.derpgroup.livefinder.model.SteamClientWrapper;
 import com.derpgroup.livefinder.model.TwitchClientWrapper;
 import com.derpgroup.livefinder.model.UserData;
 import com.derpgroup.livefinder.model.accountlinking.AccountLinkingNotLinkedException;
+import com.derpgroup.livefinder.model.accountlinking.ExternalAccountLink;
 import com.derpgroup.livefinder.model.accountlinking.UserAccount;
 import com.derpgroup.livefinder.model.accountlinking.AuthenticationException;
 import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
@@ -160,8 +161,9 @@ public class LiveFinderManager{
     steamClient = steamClientWrapper.getClient();
     
     UserAccount user = getUser(serviceInput, InterfaceName.STEAM);
+    ExternalAccountLink accountLink = getExternalAccountLink(user.getUserId(), InterfaceName.STEAM);
     
-    List<String> friends = getListOfFriendIdsByUserId(user.getSteamId());
+    List<String> friends = getListOfFriendIdsByUserId(accountLink.getExternalUserId());
     
     GetPlayerSummaries playerSummaries;
     try {
@@ -220,10 +222,11 @@ public class LiveFinderManager{
   
   private void findTwitchStreams(ServiceInput serviceInput, ServiceOutput serviceOutput) throws DerpwizardException {
     UserAccount user = getUser(serviceInput, InterfaceName.TWITCH);
+    ExternalAccountLink accountLink = getExternalAccountLink(user.getUserId(), InterfaceName.TWITCH);
     
     TwitchFollowedStreamsResponse response = null;
     try {
-      response = twitchClient.getFollowedStreams(user.getTwitchUser().getAuthToken());
+      response = twitchClient.getFollowedStreams(accountLink.getAuthToken());
     } catch (AuthenticationException e) {
       String message = "Unknown Twitch exception '" + e.getMessage() + "'.";
       LOG.warn(message);
@@ -265,6 +268,19 @@ public class LiveFinderManager{
     serviceOutput.getVisualOutput().setText(visualText.toString());
     serviceOutput.getVisualOutput().setTitle("Active Twitch Streams");
   }
+  
+  public ExternalAccountLink getExternalAccountLink(String userId, InterfaceName interfaceName) throws AccountLinkingNotLinkedException{
+    ExternalAccountLink accountLink = accountLinkingDAO.getAccountLinkByUserIdAndExternalSystemName(userId, interfaceName.name());
+    if(accountLink == null){
+      LOG.info("No account link found for userId '" + userId + "' and externalSystemName '" + interfaceName.name() + "'.");
+      throw new AccountLinkingNotLinkedException(interfaceName);
+    }else if(StringUtils.isEmpty(accountLink.getExternalUserId()) && StringUtils.isEmpty(accountLink.getAuthToken())){
+      LOG.info("Account link was missing required fields.");
+      LOG.info(accountLink.toString());
+      throw new AccountLinkingNotLinkedException(interfaceName);
+    }
+    return accountLink;
+  }
 
   public UserAccount getUser(ServiceInput serviceInput, InterfaceName interfaceName) throws DerpwizardException {
     String userId = ((LiveFinderMetadata)serviceInput.getMetadata()).getUserId();
@@ -277,12 +293,6 @@ public class LiveFinderManager{
     
     UserAccount user = accountLinkingDAO.getUserByUserId(userId);
     if(user == null){
-      throw new AccountLinkingNotLinkedException(interfaceName);
-    }
-    if(interfaceName == InterfaceName.STEAM && StringUtils.isEmpty(user.getSteamId())){
-      throw new AccountLinkingNotLinkedException(interfaceName);
-    }
-    if(interfaceName == InterfaceName.TWITCH && user.getTwitchUser() == null){
       throw new AccountLinkingNotLinkedException(interfaceName);
     }
     return user;

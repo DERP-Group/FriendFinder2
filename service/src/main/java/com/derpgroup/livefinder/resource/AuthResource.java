@@ -262,9 +262,16 @@ public class AuthResource {
     twitchUser.setName(userResponse.getDisplayName());
     user.setTwitchUser(twitchUser);
     
-    accountLinkingDAO.updateUser(user);
+    ExternalAccountLink accountLink = new ExternalAccountLink();
+    accountLink.setUserId(user.getUserId());
+    accountLink.setExternalSystemName(InterfaceName.TWITCH.name());
+    accountLink.setAuthToken(tokenResponse.getAccessToken());
+    accountLink.setRefreshToken(tokenResponse.getRefreshToken());
     
-    return Response.ok("Hello! \n Code: " + code + "\n UserId: " + user.toString()).build();
+    accountLinkingDAO.createAccountLink(accountLink);
+    ExternalAccountLink createdLink = accountLinkingDAO.getAccountLinkByUserIdAndExternalSystemName(user.getUserId(), InterfaceName.TWITCH.name());
+    
+    return Response.ok("Hello! \n Code: " + code + "\n Created Link: " + createdLink).build();
   }
 
   @GET
