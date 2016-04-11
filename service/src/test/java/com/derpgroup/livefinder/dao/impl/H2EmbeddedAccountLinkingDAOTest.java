@@ -17,7 +17,6 @@ import org.junit.After;
 
 import com.derpgroup.livefinder.configuration.AccountLinkingDAOConfig;
 import com.derpgroup.livefinder.model.accountlinking.ExternalAccountLink;
-import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
 import com.derpgroup.livefinder.model.accountlinking.UserAccount;
 
 @Ignore
@@ -175,7 +174,7 @@ public class H2EmbeddedAccountLinkingDAOTest {
     ExternalAccountLink accountLink = new ExternalAccountLink();
     accountLink.setUserId("asdf");
     accountLink.setExternalUserId("1234");
-    accountLink.setExternalSystemName(InterfaceName.ALEXA.name());
+    accountLink.setExternalSystemName("ALEXA");
     accountLink.setAuthToken("qwerty");
     
     ExternalAccountLink accountLinkRetrieved = dao.createAccountLink(accountLink);
@@ -189,7 +188,7 @@ public class H2EmbeddedAccountLinkingDAOTest {
     ExternalAccountLink accountLinkToCreate = new ExternalAccountLink();
     accountLinkToCreate.setUserId("asdf");
     accountLinkToCreate.setExternalUserId("1234");
-    accountLinkToCreate.setExternalSystemName(InterfaceName.ALEXA.name());
+    accountLinkToCreate.setExternalSystemName("ALEXA");
     accountLinkToCreate.setAuthToken("qwerty");
     
     dao.createAccountLink(accountLinkToCreate);
@@ -208,7 +207,7 @@ public class H2EmbeddedAccountLinkingDAOTest {
     ExternalAccountLink accountLink1 = new ExternalAccountLink();
     accountLink1.setUserId("userId1");
     accountLink1.setExternalUserId("externalUserId1");
-    accountLink1.setExternalSystemName(InterfaceName.ALEXA.name());
+    accountLink1.setExternalSystemName("ALEXA");
     accountLink1.setAuthToken("qwerty");
     
     dao.createAccountLink(accountLink1);
@@ -216,7 +215,7 @@ public class H2EmbeddedAccountLinkingDAOTest {
     ExternalAccountLink accountLink2 = new ExternalAccountLink();
     accountLink2.setUserId("userId1");
     accountLink2.setExternalUserId("externalUserId2");
-    accountLink2.setExternalSystemName(InterfaceName.STEAM.name());
+    accountLink2.setExternalSystemName("STEAM");
     accountLink2.setAuthToken("qwerty");
     
     dao.createAccountLink(accountLink2);
@@ -239,7 +238,7 @@ public class H2EmbeddedAccountLinkingDAOTest {
     ExternalAccountLink accountLink = new ExternalAccountLink();
     accountLink.setUserId("asdf");
     accountLink.setExternalUserId("1234");
-    accountLink.setExternalSystemName(InterfaceName.ALEXA.name());
+    accountLink.setExternalSystemName("ALEXA");
     
     ExternalAccountLink accountLinkRetrieved = dao.createAccountLink(accountLink);
     assertNotNull(accountLinkRetrieved);

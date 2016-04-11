@@ -17,7 +17,6 @@ import org.h2.jdbcx.JdbcDataSource;
 import com.derpgroup.livefinder.configuration.AccountLinkingDAOConfig;
 import com.derpgroup.livefinder.dao.AccountLinkingDAO;
 import com.derpgroup.livefinder.model.accountlinking.ExternalAccountLink;
-import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
 import com.derpgroup.livefinder.model.accountlinking.UserAccount;
 
 public class H2EmbeddedAccountLinkingDAO implements AccountLinkingDAO {
