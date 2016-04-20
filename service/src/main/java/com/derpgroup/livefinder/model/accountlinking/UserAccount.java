@@ -3,6 +3,7 @@ package com.derpgroup.livefinder.model.accountlinking;
 import java.util.List;
 import java.util.Map;
 
+import com.derpgroup.derpwizard.model.accountlinking.ExternalAccountLink;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 

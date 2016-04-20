@@ -51,6 +51,9 @@ import com.amazon.speech.ui.OutputSpeech;
 import com.amazon.speech.ui.Reprompt;
 import com.amazon.speech.ui.SimpleCard;
 import com.amazon.speech.ui.SsmlOutputSpeech;
+import com.derpgroup.derpwizard.dao.AccountLinkingDAO;
+import com.derpgroup.derpwizard.model.accountlinking.ExternalAccountLink;
+import com.derpgroup.derpwizard.model.accountlinking.UserAccount;
 import com.derpgroup.derpwizard.voice.exception.DerpwizardException;
 import com.derpgroup.derpwizard.voice.exception.DerpwizardExceptionAlexaWrapper;
 import com.derpgroup.derpwizard.voice.exception.DerpwizardException.DerpwizardExceptionReasons;
@@ -62,12 +65,9 @@ import com.derpgroup.derpwizard.voice.model.ServiceInput;
 import com.derpgroup.derpwizard.voice.util.ConversationHistoryUtils;
 import com.derpgroup.livefinder.LiveFinderMetadata;
 import com.derpgroup.livefinder.MixInModule;
-import com.derpgroup.livefinder.configuration.MainConfig;
-import com.derpgroup.livefinder.dao.AccountLinkingDAO;
+import com.derpgroup.livefinder.configuration.LiveFinderMainConfig;
 import com.derpgroup.livefinder.manager.LiveFinderManager;
 import com.derpgroup.livefinder.model.accountlinking.AccountLinkingNotLinkedException;
-import com.derpgroup.livefinder.model.accountlinking.UserAccount;
-import com.derpgroup.livefinder.model.accountlinking.ExternalAccountLink;
 import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -95,7 +95,7 @@ public class LiveFinderAlexaResource {
   String linkingFlowProtocol;
   String landingPagePath;
   
-  public LiveFinderAlexaResource(MainConfig config, Environment env, AccountLinkingDAO accountLinkingDAO) {
+  public LiveFinderAlexaResource(LiveFinderMainConfig config, Environment env, AccountLinkingDAO accountLinkingDAO) {
     this.accountLinkingDAO = accountLinkingDAO;
     manager = new LiveFinderManager(accountLinkingDAO);
     mapper = new ObjectMapper().registerModule(new MixInModule());

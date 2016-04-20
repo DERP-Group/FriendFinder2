@@ -16,7 +16,7 @@
     <dependency>
       <groupId>com.derpgroup.derpwizard</groupId>
       <artifactId>derpwizard-voice-interface</artifactId>
-      <version>${project.version}</version>
+      <version>0.0.2-SNAPSHOT</version>
       <exclusions>
         <exclusion> 
           <groupId>org.slf4j</groupId>
@@ -35,7 +35,7 @@
     <dependency>
       <groupId>com.derpgroup.derpwizard</groupId>
       <artifactId>derpwizard-service</artifactId>
-      <version>${project.version}</version>
+      <version>0.0.2-SNAPSHOT</version>
       <exclusions>
         <exclusion> 
           <groupId>org.slf4j</groupId>
@@ -110,11 +110,6 @@
 	    <groupId>com.mashape.unirest</groupId>
 	    <artifactId>unirest-java</artifactId>
 	    <version>1.4.7</version>
-	</dependency>
-	<dependency>
-		<groupId>com.h2database</groupId>
-		<artifactId>h2</artifactId>
-		<version>1.4.191</version>
 	</dependency>	
   </dependencies>
 

@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.derpgroup.livefinder.model.accountlinking.ExternalAccountLink;
+import com.derpgroup.derpwizard.model.accountlinking.ExternalAccountLink;
 
 public class ExternalAccountLinkBiMap<K,V extends ExternalAccountLink> extends HashMap<K, V>{
 

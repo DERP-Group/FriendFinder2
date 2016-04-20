@@ -3,7 +3,7 @@ package com.derpgroup.livefinder.manager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.derpgroup.livefinder.model.accountlinking.AuthenticationException;
+import com.derpgroup.derpwizard.model.accountlinking.AuthenticationException;
 import com.derpgroup.livefinder.resource.AuthResource;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -25,6 +25,7 @@ import javax.validation.constraints.NotNull;
 
 import io.dropwizard.Configuration;
 
+import com.derpgroup.derpwizard.configuration.MainConfig;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -33,8 +34,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author Rusty Gerard
  * @since 0.0.1
  */
-public class MainConfig extends Configuration {
-  private boolean prettyPrint = true;
+public class LiveFinderMainConfig extends MainConfig {
   
   @Valid
   @NotNull
@@ -42,17 +42,7 @@ public class MainConfig extends Configuration {
   
   @Valid
   @NotNull
-  private DAOConfig daoConfig;
-
-  @JsonProperty
-  public boolean isPrettyPrint() {
-    return prettyPrint;
-  }
-
-  @JsonProperty
-  public void setPrettyPrint(boolean prettyPrint) {
-    this.prettyPrint = prettyPrint;
-  }
+  private LiveFinderDAOConfig daoConfig;
 
   @JsonProperty
   public LiveFinderConfig getLiveFinderConfig() {
@@ -65,12 +55,12 @@ public class MainConfig extends Configuration {
   }
 
   @JsonProperty
-  public DAOConfig getDaoConfig() {
+  public LiveFinderDAOConfig getDaoConfig() {
     return daoConfig;
   }
 
   @JsonProperty
-  public void setDaoConfig(DAOConfig daoConfig) {
+  public void setDaoConfig(LiveFinderDAOConfig daoConfig) {
     this.daoConfig = daoConfig;
   }
   

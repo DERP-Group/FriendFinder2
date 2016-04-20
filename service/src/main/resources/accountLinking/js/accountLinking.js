@@ -77,7 +77,7 @@ function linkSteamId(){
 function updateUser(){
 	var firstName = qwery('#firstName')[0].value;
 	var steamId = qwery('#steamExternalId')[0].value;
-	var requestBody = {'firstName':firstName,'steamId':steamId};
+	var requestBody = {'firstName':firstName};
 	var externalAccountLinks = {}
 	if(steamId){
 		externalAccountLinks.STEAM = {'userId':userId,'externalUserId':steamId,'externalSystemName':'STEAM'}
