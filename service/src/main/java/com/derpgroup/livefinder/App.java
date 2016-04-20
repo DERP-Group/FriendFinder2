@@ -31,7 +31,7 @@ import com.derpgroup.derpwizard.configuration.AccountLinkingDAOConfig;
 import com.derpgroup.derpwizard.dao.AccountLinkingDAO;
 import com.derpgroup.derpwizard.dao.impl.AccountLinkingDAOFactory;
 import com.derpgroup.derpwizard.dao.impl.H2EmbeddedAccountLinkingDAO;
-import com.derpgroup.livefinder.configuration.MainConfig;
+import com.derpgroup.livefinder.configuration.LiveFinderMainConfig;
 import com.derpgroup.livefinder.configuration.TwitchAccountLinkingConfig;
 import com.derpgroup.livefinder.health.BasicHealthCheck;
 import com.derpgroup.livefinder.model.SteamClientWrapper;
@@ -47,20 +47,20 @@ import com.fasterxml.jackson.databind.SerializationFeature;
  * @author Rusty Gerard
  * @since 0.0.1
  */
-public class App extends Application<MainConfig> {
+public class App extends Application<LiveFinderMainConfig> {
 
   public static void main(String[] args) throws Exception {
     new App().run(args);
   }
 
   @Override
-  public void initialize(Bootstrap<MainConfig> bootstrap) {
+  public void initialize(Bootstrap<LiveFinderMainConfig> bootstrap) {
     
     bootstrap.addBundle(new AssetsBundle("/accountLinking", "/livefinder/accountLinking", "accountLinking.html"));
   }
 
   @Override
-  public void run(MainConfig config, Environment environment) throws IOException {
+  public void run(LiveFinderMainConfig config, Environment environment) throws IOException {
     if (config.isPrettyPrint()) {
       ObjectMapper mapper = environment.getObjectMapper();
       mapper.enable(SerializationFeature.INDENT_OUTPUT);

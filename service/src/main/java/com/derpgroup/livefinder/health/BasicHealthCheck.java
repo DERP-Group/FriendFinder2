@@ -23,7 +23,7 @@ package com.derpgroup.livefinder.health;
 import io.dropwizard.setup.Environment;
 
 import com.codahale.metrics.health.HealthCheck;
-import com.derpgroup.livefinder.configuration.MainConfig;
+import com.derpgroup.livefinder.configuration.LiveFinderMainConfig;
 
 /**
  * Health check to verify that the local filesystem is writable.
@@ -32,7 +32,7 @@ import com.derpgroup.livefinder.configuration.MainConfig;
  * @since 0.0.1
  */
 public class BasicHealthCheck extends HealthCheck {
-  public BasicHealthCheck(MainConfig config, Environment environment) {}
+  public BasicHealthCheck(LiveFinderMainConfig config, Environment environment) {}
 
   @Override
   protected Result check() throws Exception {

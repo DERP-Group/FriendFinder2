@@ -65,7 +65,7 @@ import com.derpgroup.derpwizard.voice.model.ServiceInput;
 import com.derpgroup.derpwizard.voice.util.ConversationHistoryUtils;
 import com.derpgroup.livefinder.LiveFinderMetadata;
 import com.derpgroup.livefinder.MixInModule;
-import com.derpgroup.livefinder.configuration.MainConfig;
+import com.derpgroup.livefinder.configuration.LiveFinderMainConfig;
 import com.derpgroup.livefinder.manager.LiveFinderManager;
 import com.derpgroup.livefinder.model.accountlinking.AccountLinkingNotLinkedException;
 import com.derpgroup.livefinder.model.accountlinking.InterfaceName;
@@ -95,7 +95,7 @@ public class LiveFinderAlexaResource {
   String linkingFlowProtocol;
   String landingPagePath;
   
-  public LiveFinderAlexaResource(MainConfig config, Environment env, AccountLinkingDAO accountLinkingDAO) {
+  public LiveFinderAlexaResource(LiveFinderMainConfig config, Environment env, AccountLinkingDAO accountLinkingDAO) {
     this.accountLinkingDAO = accountLinkingDAO;
     manager = new LiveFinderManager(accountLinkingDAO);
     mapper = new ObjectMapper().registerModule(new MixInModule());

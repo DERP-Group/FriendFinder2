@@ -50,7 +50,7 @@ import com.derpgroup.derpwizard.model.accountlinking.AuthenticationException;
 import com.derpgroup.derpwizard.model.accountlinking.ExternalAccountLink;
 import com.derpgroup.derpwizard.model.accountlinking.UserAccount;
 import com.derpgroup.derpwizard.voice.exception.DerpwizardException;
-import com.derpgroup.livefinder.configuration.MainConfig;
+import com.derpgroup.livefinder.configuration.LiveFinderMainConfig;
 import com.derpgroup.livefinder.manager.TwitchClient;
 import com.derpgroup.livefinder.manager.TwitchTokenResponse;
 import com.derpgroup.livefinder.manager.TwitchUserResponse;
@@ -79,7 +79,7 @@ public class AuthResource {
   private TwitchClient twitchClient;
   
   
-  public AuthResource(MainConfig config, Environment env, AccountLinkingDAO accountLinkingDAO) {
+  public AuthResource(LiveFinderMainConfig config, Environment env, AccountLinkingDAO accountLinkingDAO) {
     this.accountLinkingDAO = accountLinkingDAO;
     
    /* steamLinkingFlowHostname = config.getLiveFinderConfig().getSteamAccountLinkingConfig().getLinkingFlowHostname();
